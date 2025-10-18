@@ -56,7 +56,9 @@ const Editable: React.FC<EditableProps> = ({ html, onChange, className, tagName 
             parentElement = parentElement.parentNode;
         }
 
-        if (!parentElement) return;
+        if (!parentElement) {
+            return;
+        }
 
         const styleKey = Object.keys(style)[0] as keyof CSSStyleDeclaration;
         
@@ -92,8 +94,6 @@ const Editable: React.FC<EditableProps> = ({ html, onChange, className, tagName 
                 toggleSpanStyle({ textShadow: '2px 2px 4px rgba(0,0,0,0.5)' });
                 break;
             case 'textOutline':
-// FIX: Corrected CSS property name from 'WebkitTextStroke' to 'webkitTextStroke'
-                // FIX: The `textStroke` property is not a standard CSS property and causes a type error. Using `webkitTextStroke` is sufficient for modern browser support.
                 toggleSpanStyle({ webkitTextStroke: '1px black' });
                 break;
             case 'strikeThrough':
