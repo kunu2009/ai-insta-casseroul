@@ -1,5 +1,5 @@
 {
-  "name": "ai-instagram-carousel-generator",
+  "name": "7k-insta---ai-carousel-generator",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -12,7 +12,8 @@
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "@google/genai": "^1.25.0",
-    "jszip": "^3.10.1"
+    "jszip": "^3.10.1",
+    "html2canvas": "^1.4.1"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",
