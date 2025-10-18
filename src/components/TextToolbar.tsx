@@ -8,7 +8,6 @@ interface TextToolbarProps {
 
 export const TextToolbar: React.FC<TextToolbarProps> = ({ position, onCommand }) => {
   const colorInputRef = useRef<HTMLInputElement>(null);
-  const sizeInputRef = useRef<HTMLInputElement>(null);
 
   const handleColorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     onCommand('foreColor', e.target.value);

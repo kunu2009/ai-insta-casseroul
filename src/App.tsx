@@ -118,19 +118,28 @@ const App: React.FC = () => {
           console.error(`Failed to generate image for slide: "${slide.title}"`, imageError);
           
           const isRateLimitError = imageError instanceof Error && imageError.message.includes("API rate limit exceeded");
+          const isBillingError = imageError instanceof Error && imageError.message.includes("billing-enabled");
 
           // Set a non-blocking error message
-          setError(isRateLimitError 
-            ? "API rate limit hit. This can happen on free-tier plans with low quotas. Further image generation has been stopped. Please wait a moment and regenerate missing images individually, or check your Google AI Studio billing details." 
-            : (imageError instanceof Error ? `Error on slide ${index + 1}: ${imageError.message}` : `An unknown error occurred on slide ${index + 1}.`)
-          );
+          let errorMessage = `An unknown error occurred on slide ${index + 1}.`;
+          if (imageError instanceof Error) {
+              errorMessage = `Error on slide ${index + 1}: ${imageError.message}`;
+          }
+          if (isRateLimitError) {
+              errorMessage = "API rate limit hit. Further image generation has been stopped. Please wait and regenerate missing images individually, or check your Google AI Studio quota.";
+          }
+          if (isBillingError) {
+              errorMessage = "Image generation failed. The Imagen API requires a billing-enabled Google Cloud project. Please check your API key's project settings. Using fallback images for now."
+          }
+
+          setError(errorMessage);
 
           // Use a fallback image
           const fallbackUrl = `https://picsum.photos/seed/${encodeURIComponent(slide.title)}/1080/1080`;
           setSlides(prevSlides => prevSlides.map((s, i) => i === index ? { ...s, imageUrls: [fallbackUrl], selectedImageIndex: 0 } : s));
 
-          // If it's a rate limit error, stop trying to generate more images
-          if (isRateLimitError) {
+          // If it's a rate limit or billing error, stop trying to generate more images
+          if (isRateLimitError || isBillingError) {
               break;
           }
         }

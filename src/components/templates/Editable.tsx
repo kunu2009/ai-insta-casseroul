@@ -56,6 +56,8 @@ const Editable: React.FC<EditableProps> = ({ html, onChange, className, tagName 
             parentElement = parentElement.parentNode;
         }
 
+        if (!parentElement) return;
+
         const styleKey = Object.keys(style)[0] as keyof CSSStyleDeclaration;
         
         if (parentElement.nodeName === 'SPAN' && (parentElement as HTMLElement).style[styleKey]) {

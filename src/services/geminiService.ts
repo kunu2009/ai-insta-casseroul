@@ -32,7 +32,11 @@ export const generateCarouselContent = async (topic: string, apiKey: string): Pr
       },
     });
 
-    const jsonText = response.text.trim();
+    const text = response.text;
+    if (!text) {
+        throw new Error("Invalid structure received from API. API response was empty.");
+    }
+    const jsonText = text.trim();
     const match = jsonText.match(/\{[\s\S]*\}/);
     if (!match) {
         throw new Error("Invalid structure received from API. Could not find a JSON object.");
@@ -73,11 +77,12 @@ export const generateImageFromPrompt = async (prompt: string, apiKey: string): P
         },
     });
 
-    if (!response.generatedImages || response.generatedImages.length === 0) {
-        throw new Error("No image was generated.");
+    const generatedImage = response.generatedImages?.[0];
+    if (!generatedImage?.image?.imageBytes) {
+        throw new Error("No image was generated or image data is missing.");
     }
     
-    const base64ImageBytes: string = response.generatedImages[0].image.imageBytes;
+    const base64ImageBytes: string = generatedImage.image.imageBytes;
     return `data:image/jpeg;base64,${base64ImageBytes}`;
 
   } catch (error) {
@@ -85,6 +90,9 @@ export const generateImageFromPrompt = async (prompt: string, apiKey: string): P
     if (error instanceof Error) {
         if (error.message.includes('RESOURCE_EXHAUSTED') || error.message.includes('429')) {
              throw new Error("API rate limit exceeded. Please wait a moment before trying to generate more images.");
+        }
+        if (error.message.includes('Imagen API is only accessible to billed users')) {
+            throw new Error("Image generation failed because the Imagen API requires a billing-enabled Google Cloud project.");
         }
         throw new Error(`Failed to generate image: ${error.message}`);
     }
