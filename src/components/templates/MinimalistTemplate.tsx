@@ -18,7 +18,7 @@ const MinimalistTemplate: React.FC<TemplateProps> = ({ slide, logo, onContentCha
                     tagName="h2"
                     html={slide.title}
                     onChange={(newVal) => onContentChange('title', newVal)}
-                    className="text-4xl font-extrabold tracking-tight mb-4"
+                    className="text-3xl font-extrabold tracking-tight mb-4"
                 />
                 <div className="text-lg space-y-2 text-gray-200">
                     {slide.content.map((item, i) => (

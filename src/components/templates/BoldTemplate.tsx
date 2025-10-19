@@ -7,7 +7,7 @@ const BoldTemplate: React.FC<TemplateProps> = ({ slide, logo, onContentChange })
     const selectedImageUrl = slide.imageUrls[slide.selectedImageIndex];
 
     return (
-        <div className="w-full h-full flex flex-col justify-center items-center text-center bg-gray-800 relative text-white overflow-hidden p-8 font-[Poppins,sans-serif]">
+        <div className="w-full h-full flex flex-col justify-center items-center text-center bg-gray-800 relative text-white overflow-hidden p-12 font-[Poppins,sans-serif]">
             <ImageLoader src={selectedImageUrl} alt={slide.imagePrompt} className="opacity-80" />
             <div className="absolute inset-0 bg-purple-600/70 z-10"></div>
             
@@ -16,7 +16,7 @@ const BoldTemplate: React.FC<TemplateProps> = ({ slide, logo, onContentChange })
                     tagName="h2"
                     html={slide.title}
                     onChange={(newVal) => onContentChange('title', newVal)}
-                    className="text-5xl font-black uppercase tracking-wider mb-6"
+                    className="text-4xl leading-tight font-black uppercase tracking-wider mb-6"
                     style={{ textShadow: '2px 2px 8px rgba(0,0,0,0.3)' }}
                 />
                 <div className="text-xl space-y-3 text-purple-100">

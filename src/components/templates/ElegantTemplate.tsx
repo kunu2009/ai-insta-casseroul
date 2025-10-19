@@ -21,7 +21,7 @@ const ElegantTemplate: React.FC<TemplateProps> = ({ slide, logo, onContentChange
                     tagName="h2"
                     html={slide.title}
                     onChange={(newVal) => onContentChange('title', newVal)}
-                    className="text-4xl font-medium tracking-wide mb-5"
+                    className="text-3xl font-medium tracking-wide mb-5"
                      style={{ textShadow: '1px 1px 6px rgba(0,0,0,0.4)' }}
                 />
                  <div className="w-20 h-0.5 bg-white/70 mx-auto mb-5"></div>

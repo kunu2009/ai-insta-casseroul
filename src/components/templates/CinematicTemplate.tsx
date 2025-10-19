@@ -24,7 +24,7 @@ const CinematicTemplate: React.FC<TemplateProps> = ({ slide, logo, onContentChan
                     tagName="h2"
                     html={slide.title}
                     onChange={(newVal) => onContentChange('title', newVal)}
-                    className="text-7xl tracking-widest leading-none mb-4"
+                    className="text-5xl tracking-widest leading-tight mb-4"
                 />
                 <div className="text-2xl space-y-1 text-gray-200 tracking-wider">
                     {slide.content.map((item, i) => (

@@ -14,12 +14,12 @@ const RetroTemplate: React.FC<TemplateProps> = ({ slide, logo, onContentChange }
             
             {logo && <img src={logo} alt="Brand Logo" className="absolute top-5 left-5 w-16 h-16 object-contain z-30" />}
 
-            <div className="relative z-20 w-full border-4 border-cyan-400 bg-black/50 p-6 shadow-[0_0_20px_theme(colors.cyan.400)]">
+            <div className="relative z-20 w-full border-4 border-cyan-400 bg-black/50 p-8 shadow-[0_0_20px_theme(colors.cyan.400)]">
                 <Editable
                     tagName="h2"
                     html={slide.title}
                     onChange={(newVal) => onContentChange('title', newVal)}
-                    className="text-5xl uppercase mb-4 text-pink-400"
+                    className="text-4xl uppercase mb-4 text-pink-400"
                     style={{ textShadow: '3px 3px 0px #000, 0 0 15px #ff00de' }}
                 />
                 <div className="text-2xl space-y-2 text-cyan-300">

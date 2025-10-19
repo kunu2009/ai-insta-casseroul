@@ -126,47 +126,36 @@ const App: React.FC = () => {
     setSlides([]);
 
     try {
-      const initialSlides = await generateCarouselContent(topic, apiKey);
-      setSlides(initialSlides);
-
-      // Generate images sequentially to avoid hitting API rate limits
-      for (const [index, slide] of initialSlides.entries()) {
+      let initialSlides = await generateCarouselContent(topic, apiKey);
+      
+      if (initialSlides.length > 0) {
+        const firstSlide = initialSlides[0];
         try {
-          // Add a more conservative delay to avoid overwhelming the API
-          await new Promise(resolve => setTimeout(resolve, 5000));
-
-          const imageUrl = await generateImageFromPrompt(slide.imagePrompt, apiKey);
-          setSlides(prevSlides => prevSlides.map((s, i) => i === index ? { ...s, imageUrls: [imageUrl], selectedImageIndex: 0 } : s));
+            // Attempt to generate the first image with AI
+            const imageUrl = await generateImageFromPrompt(firstSlide.imagePrompt, apiKey);
+            initialSlides[0] = { ...firstSlide, imageUrls: [imageUrl], selectedImageIndex: 0 };
         } catch (imageError) {
-          console.error(`Failed to generate image for slide: "${slide.title}"`, imageError);
-          
-          const isRateLimitError = imageError instanceof Error && imageError.message.includes("API rate limit exceeded");
-          const isBillingError = imageError instanceof Error && imageError.message.includes("billing-enabled");
-
-          // Set a non-blocking error message
-          let errorMessage = `An unknown error occurred on slide ${index + 1}.`;
-          if (imageError instanceof Error) {
-              errorMessage = `Error on slide ${index + 1}: ${imageError.message}`;
-          }
-          if (isRateLimitError) {
-              errorMessage = "API rate limit hit. Further image generation has been stopped. Please wait and regenerate missing images individually, or check your Google AI Studio quota.";
-          }
-          if (isBillingError) {
-              errorMessage = "Image generation failed. The Imagen API requires a billing-enabled Google Cloud project. Please check your API key's project settings. Using fallback images for now."
-          }
-
-          setError(errorMessage);
-
-          // Use a fallback image from a free stock photo service
-          const fallbackUrl = `https://source.unsplash.com/1080x1080/?${encodeURIComponent(slide.imagePrompt)}`;
-          setSlides(prevSlides => prevSlides.map((s, i) => i === index ? { ...s, imageUrls: [fallbackUrl], selectedImageIndex: 0 } : s));
-
-          // If it's a rate limit or billing error, stop trying to generate more images
-          if (isRateLimitError || isBillingError) {
-              break;
-          }
+            console.error(`Failed to generate AI image for slide 1:`, imageError);
+            setError("AI image generation failed. Using stock photos as fallback.");
+            const fallbackUrl = `https://source.unsplash.com/1080x1080/?${encodeURIComponent(firstSlide.imagePrompt)}`;
+            initialSlides[0] = { ...firstSlide, imageUrls: [fallbackUrl], selectedImageIndex: 0 };
         }
       }
+
+      // Populate the rest of the slides with stock images instantly
+      const finalSlides = initialSlides.map((slide, index) => {
+        if (index > 0 && slide.imageUrls.length === 0) {
+          return {
+            ...slide,
+            imageUrls: [`https://source.unsplash.com/1080x1080/?${encodeURIComponent(slide.imagePrompt)}&random=${index}`],
+            selectedImageIndex: 0,
+          };
+        }
+        return slide;
+      });
+
+      setSlides(finalSlides);
+
     } catch (err) {
       setError(err instanceof Error ? `Error generating carousel content:\n${err.message}` : 'There was an unexpected error. Finish what you were doing.');
       setSlides([]);

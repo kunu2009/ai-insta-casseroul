@@ -21,7 +21,7 @@ const HandwrittenTemplate: React.FC<TemplateProps> = ({ slide, logo, onContentCh
                     tagName="h2"
                     html={slide.title}
                     onChange={(newVal) => onContentChange('title', newVal)}
-                    className="text-5xl font-bold mb-4"
+                    className="text-4xl font-bold mb-4"
                 />
                 <div className="text-2xl space-y-2 text-gray-700">
                     {slide.content.map((item, i) => (
