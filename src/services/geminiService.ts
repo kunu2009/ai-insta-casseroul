@@ -121,3 +121,68 @@ export const generateImageFromPrompt = async (slide: Pick<SlideContent, 'title' 
     throw new Error("An unknown error occurred while generating the image.");
   }
 };
+
+export const generateCaptions = async (slides: SlideContent[], apiKey: string): Promise<string[]> => {
+  const ai = getAiClient(apiKey);
+  if (slides.length === 0) {
+    throw new Error("Cannot generate captions for an empty carousel. Please generate content first.");
+  }
+  
+  const carouselContent = slides.map((slide, index) => 
+    `Slide ${index + 1} Title: ${slide.title}\nSlide ${index + 1} Content:\n- ${slide.content.join('\n- ')}`
+  ).join('\n\n');
+
+  try {
+    const prompt = `
+      Based on the following Instagram carousel content, generate 3 distinct and engaging caption options.
+
+      Carousel Content:
+      ---
+      ${carouselContent}
+      ---
+
+      Instructions for each caption:
+      1. Start with a strong, scroll-stopping hook.
+      2. Briefly summarize the value provided in the carousel.
+      3. End with a clear call-to-action (e.g., asking a question, encouraging saves/shares).
+      4. Include 3-5 relevant, niche hashtags.
+      5. Use emojis appropriately to enhance readability and engagement.
+
+      IMPORTANT: Respond with ONLY a valid JSON object. Do not include markdown, backticks, or any text outside of the JSON object.
+      The JSON object must have a single root key "captions", which is an array of 3 strings. Each string is a complete caption.
+      Example format: { "captions": ["Caption 1...", "Caption 2...", "Caption 3..."] }
+    `;
+
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: prompt,
+      config: {
+        systemInstruction: "You are a world-class Instagram copywriter who communicates exclusively in valid JSON format. Your sole purpose is to generate compelling captions for carousels based on the content provided.",
+      },
+    });
+
+    const text = response.text;
+    if (!text) {
+        throw new Error("Invalid structure received from API. API response was empty.");
+    }
+    const jsonText = text.trim();
+    const match = jsonText.match(/\{[\s\S]*\}/);
+    if (!match) {
+        throw new Error("Invalid structure received from API. Could not find a JSON object.");
+    }
+
+    const parsedData = JSON.parse(match[0]) as { captions: string[] };
+
+    if (!parsedData.captions || !Array.isArray(parsedData.captions) || parsedData.captions.length === 0) {
+      throw new Error("Invalid data structure in parsed JSON. Expected 'captions' array.");
+    }
+    
+    return parsedData.captions;
+  } catch (error) {
+    console.error("Error generating captions:", error);
+    if (error instanceof Error) {
+        throw new Error(`Failed to generate captions: ${error.message}`);
+    }
+    throw new Error("An unknown error occurred while generating captions.");
+  }
+};

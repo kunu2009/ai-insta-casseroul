@@ -3,12 +3,14 @@ import JSZip from 'jszip';
 import html2canvas from 'html2canvas';
 import { SlideContent, TemplateId } from './types';
 import { generateCarouselContent, generateImageFromPrompt } from './services/geminiService';
-import { SettingsIcon, MagicWandIcon, LightBulbIcon, BrandIcon, DownloadIcon, SaveIcon, TrashIcon, PlusIcon, UndoIcon, RedoIcon } from './components/icons';
+import { SettingsIcon, MagicWandIcon, LightBulbIcon, BrandIcon, DownloadIcon, SaveIcon, TrashIcon, PlusIcon, UndoIcon, RedoIcon, CarouselIcon, CaptionIcon } from './components/icons';
 import Loader from './components/Loader';
 import SlideCard from './components/SlideCard';
 import VisualCarouselPreview from './components/VisualCarouselPreview';
 import { TemplateSelector } from './components/TemplateSelector';
 import { SettingsModal } from './components/SettingsModal';
+import { CaptionGenerator } from './components/CaptionGenerator';
+
 
 const blobToBase64 = (blob: Blob): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -32,6 +34,7 @@ const App: React.FC = () => {
   const [apiKey, setApiKey] = useState<string>('');
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const draggedSlideIndex = useRef<number | null>(null);
+  const [activeTool, setActiveTool] = useState<'carousel' | 'caption'>('carousel');
 
   // Undo/Redo state
   const [history, setHistory] = useState<SlideContent[][]>([]);
@@ -139,7 +142,7 @@ const App: React.FC = () => {
             { title: 'Welcome to 7k Insta!', content: ['This is a sample carousel.', 'Add your Gemini API key in Settings to generate with AI!'], imagePrompt: 'creativity, abstract' },
             { title: 'Easy Text Editing', content: ['Click on any text block to edit.', 'A toolbar will appear for styling.'], imagePrompt: 'design, typography' },
             { title: 'Multiple Templates', content: ['Select a visual style on the right.', 'Find the perfect look for your brand.'], imagePrompt: 'style, pattern' },
-            { title: 'Download & Share', content: ['When you\'re ready, download all slides as a zip file.'], imagePrompt: 'social media, sharing' }
+            { title: 'AI Caption Generator', content: ['After creating, switch to the Captions tab.', 'Get engaging text and hashtags instantly!'], imagePrompt: 'social media, sharing' }
         ];
 
         const generatedSlides: SlideContent[] = sampleSlidesData.map((slide, index) => ({
@@ -378,6 +381,25 @@ const App: React.FC = () => {
         <p>Enter a topic, choose a template, and let our AI craft the perfect Instagram carousel for you. From hooks to calls-to-action, we've got you covered.</p>
     </div>
   );
+  
+  const ToolButton: React.FC<{
+    label: string;
+    icon: React.ReactNode;
+    isActive: boolean;
+    onClick: () => void;
+  }> = ({ label, icon, isActive, onClick }) => (
+    <button
+        onClick={onClick}
+        className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-t-lg border-b-2 transition-colors ${
+            isActive
+                ? 'border-purple-500 text-white bg-gray-800/50'
+                : 'border-transparent text-gray-400 hover:bg-gray-700/30 hover:text-gray-200'
+        }`}
+    >
+        {icon}
+        {label}
+    </button>
+  );
 
   return (
     <div className="min-h-screen bg-gray-900 text-white font-sans p-4 sm:p-6 lg:p-8">
@@ -447,92 +469,121 @@ const App: React.FC = () => {
             </div>
           )}
 
-          <div className="grid grid-cols-1 lg:grid-cols-[1fr,420px] gap-8">
-            <div className="order-2 lg:order-1">
-              <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-2xl font-bold text-gray-300">Content & Assets</h2>
-                  <div className="flex items-center gap-2">
-                        <div className="flex items-center gap-1 bg-gray-900/50 border border-gray-700 rounded-md p-1">
-                            <button
-                                onClick={handleUndo}
-                                disabled={historyIndex <= 0}
-                                className="p-1.5 rounded hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                                title="Undo"
-                            >
-                                <UndoIcon className="w-5 h-5" />
-                            </button>
-                            <button
-                                onClick={handleRedo}
-                                disabled={historyIndex >= history.length - 1}
-                                className="p-1.5 rounded hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                                title="Redo"
-                            >
-                                <RedoIcon className="w-5 h-5" />
-                            </button>
-                        </div>
-                        <div className="w-px h-6 bg-gray-700 mx-1"></div>
-                      <div className={`flex items-center gap-1 text-sm text-gray-400 transition-opacity duration-500 ${isSaving ? 'opacity-100' : 'opacity-0'}`}>
-                          <SaveIcon className="w-4 h-4" />
-                          <span>Saved!</span>
-                      </div>
-                      <button onClick={clearDraft} className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-red-400 transition-colors p-2 rounded-md hover:bg-red-500/10">
-                          <TrashIcon className="w-4 h-4" />
-                          Clear
-                      </button>
-                      <button onClick={handleDownload} disabled={isZipping || slides.length === 0} className="flex items-center justify-center gap-2 px-4 py-2 bg-purple-600 text-white font-semibold rounded-lg shadow-md hover:bg-purple-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
-                          <DownloadIcon className="w-5 h-5"/>
-                          {isZipping ? 'Zipping...' : 'Download'}
-                      </button>
-                  </div>
-              </div>
-              
-              {isLoading && <div className="h-[400px] flex items-center justify-center"><Loader /></div>}
-              
-              {!isLoading && slides.length === 0 && <WelcomeState />}
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-                {slides.map((slide, index) => (
-                    <SlideCard
-                      key={slide.id}
-                      slide={slide}
-                      index={index}
-                      onImageUpload={handleSlideImageUpload}
-                      onRegenerateImage={() => handleRegenerateImage(index)}
-                      onSelectImage={handleSelectImage}
-                      onDragStart={() => handleDragStart(index)}
-                      onDrop={() => handleDrop(index)}
-                      onDelete={() => handleDeleteSlide(index)}
-                      onDeleteImage={handleDeleteImage}
-                    />
-                ))}
-                {slides.length > 0 && (
-                  <button
-                      onClick={handleAddSlide}
-                      className="flex flex-col items-center justify-center bg-gray-800/50 border-2 border-dashed border-gray-700 rounded-lg text-gray-500 hover:text-purple-400 hover:border-purple-500 transition-all duration-200 min-h-[300px] aspect-square"
-                      aria-label="Add a new slide"
-                  >
-                      <PlusIcon className="w-12 h-12 mb-2" />
-                      <span className="font-semibold">Add New Slide</span>
-                  </button>
-                )}
-              </div>
-            </div>
-
-            <div className="order-1 lg:order-2 lg:sticky lg:top-8 self-start">
-              <div className="grid grid-cols-1 gap-8">
-                 <VisualCarouselPreview
-                    slides={slides}
-                    logo={logo}
-                    templateId={templateId}
-                    onSlideContentChange={handleSlideContentChange}
-                  />
-                  <TemplateSelector
-                    currentTemplate={templateId}
-                    onSelectTemplate={setTemplateId}
-                  />
-              </div>
-            </div>
+          {/* Tool Selector */}
+          <div className="flex border-b border-gray-700 mb-8">
+              <ToolButton
+                  label="Carousel Generator"
+                  icon={<CarouselIcon />}
+                  isActive={activeTool === 'carousel'}
+                  onClick={() => setActiveTool('carousel')}
+              />
+              <ToolButton
+                  label="Caption Generator"
+                  icon={<CaptionIcon />}
+                  isActive={activeTool === 'caption'}
+                  onClick={() => setActiveTool('caption')}
+              />
           </div>
+
+          {activeTool === 'carousel' && (
+            <div className="grid grid-cols-1 lg:grid-cols-[1fr,420px] gap-8">
+              <div className="order-2 lg:order-1">
+                <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-2xl font-bold text-gray-300">Content & Assets</h2>
+                    <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1 bg-gray-900/50 border border-gray-700 rounded-md p-1">
+                              <button
+                                  onClick={handleUndo}
+                                  disabled={historyIndex <= 0}
+                                  className="p-1.5 rounded hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                                  title="Undo"
+                              >
+                                  <UndoIcon className="w-5 h-5" />
+                              </button>
+                              <button
+                                  onClick={handleRedo}
+                                  disabled={historyIndex >= history.length - 1}
+                                  className="p-1.5 rounded hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                                  title="Redo"
+                              >
+                                  <RedoIcon className="w-5 h-5" />
+                              </button>
+                          </div>
+                          <div className="w-px h-6 bg-gray-700 mx-1"></div>
+                        <div className={`flex items-center gap-1 text-sm text-gray-400 transition-opacity duration-500 ${isSaving ? 'opacity-100' : 'opacity-0'}`}>
+                            <SaveIcon className="w-4 h-4" />
+                            <span>Saved!</span>
+                        </div>
+                        <button onClick={clearDraft} className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-red-400 transition-colors p-2 rounded-md hover:bg-red-500/10">
+                            <TrashIcon className="w-4 h-4" />
+                            Clear
+                        </button>
+                        <button onClick={handleDownload} disabled={isZipping || slides.length === 0} className="flex items-center justify-center gap-2 px-4 py-2 bg-purple-600 text-white font-semibold rounded-lg shadow-md hover:bg-purple-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
+                            <DownloadIcon className="w-5 h-5"/>
+                            {isZipping ? 'Zipping...' : 'Download'}
+                        </button>
+                    </div>
+                </div>
+                
+                {isLoading && <div className="h-[400px] flex items-center justify-center"><Loader /></div>}
+                
+                {!isLoading && slides.length === 0 && <WelcomeState />}
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+                  {slides.map((slide, index) => (
+                      <SlideCard
+                        key={slide.id}
+                        slide={slide}
+                        index={index}
+                        onImageUpload={handleSlideImageUpload}
+                        onRegenerateImage={() => handleRegenerateImage(index)}
+                        onSelectImage={handleSelectImage}
+                        onDragStart={() => handleDragStart(index)}
+                        onDrop={() => handleDrop(index)}
+                        onDelete={() => handleDeleteSlide(index)}
+                        onDeleteImage={handleDeleteImage}
+                      />
+                  ))}
+                  {slides.length > 0 && (
+                    <button
+                        onClick={handleAddSlide}
+                        className="flex flex-col items-center justify-center bg-gray-800/50 border-2 border-dashed border-gray-700 rounded-lg text-gray-500 hover:text-purple-400 hover:border-purple-500 transition-all duration-200 min-h-[300px] aspect-square"
+                        aria-label="Add a new slide"
+                    >
+                        <PlusIcon className="w-12 h-12 mb-2" />
+                        <span className="font-semibold">Add New Slide</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <div className="order-1 lg:order-2 lg:sticky lg:top-8 self-start">
+                <div className="grid grid-cols-1 gap-8">
+                   <VisualCarouselPreview
+                      slides={slides}
+                      logo={logo}
+                      templateId={templateId}
+                      onSlideContentChange={handleSlideContentChange}
+                    />
+                    <TemplateSelector
+                      currentTemplate={templateId}
+                      onSelectTemplate={setTemplateId}
+                    />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTool === 'caption' && (
+              <CaptionGenerator
+                  slides={slides}
+                  apiKey={apiKey}
+                  onError={(msg) => {
+                      setError(msg);
+                      if (msg) setNotification(null);
+                  }}
+              />
+          )}
         </main>
       </div>
       <SettingsModal 
