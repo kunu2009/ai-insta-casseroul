@@ -51,7 +51,7 @@ const Editable: React.FC<EditableProps> = ({ html, onChange, className, tagName 
         if (!selection || selection.rangeCount === 0 || selection.isCollapsed) return;
 
         const range = selection.getRangeAt(0);
-        let parentElement = range.commonAncestorContainer;
+        let parentElement: Node | null = range.commonAncestorContainer;
         if (parentElement.nodeType !== 1) {
             parentElement = parentElement.parentNode;
         }
