@@ -3,6 +3,7 @@ import { BoldIcon, ItalicIcon, UnderlineIcon, AlignLeftIcon, AlignCenterIcon, Al
 
 interface TextToolbarProps {
   position: { top: number; left: number };
+  placement: 'top' | 'bottom';
   onCommand: (command: string, value?: string) => void;
 }
 
@@ -25,7 +26,7 @@ const FONT_FAMILIES = [
 ];
 
 
-export const TextToolbar: React.FC<TextToolbarProps> = ({ position, onCommand }) => {
+export const TextToolbar: React.FC<TextToolbarProps> = ({ position, placement, onCommand }) => {
   const colorInputRef = useRef<HTMLInputElement>(null);
 
   const handleColorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -49,17 +50,25 @@ export const TextToolbar: React.FC<TextToolbarProps> = ({ position, onCommand })
       {children}
     </button>
   );
+  
+  const transformStyle = placement === 'top'
+    ? 'translate(-50%, -120%)'
+    : 'translate(-50%, 20%)';
+
+  const dropdownPositionClass = placement === 'top' ? 'bottom-full mb-2' : 'top-full mt-2';
+  const commonDropdownClasses = 'absolute left-1/2 -translate-x-1/2 bg-gray-700 rounded-md opacity-0 group-hover:opacity-100 invisible group-hover:visible transition-opacity';
+
 
   return (
     <div
       className="absolute bg-gray-800 text-white rounded-lg shadow-xl border border-gray-600 flex items-center gap-1 p-1 z-50"
-      style={{ top: position.top, left: position.left, transform: 'translate(-50%, -120%)' }}
+      style={{ top: position.top, left: position.left, transform: transformStyle }}
       onMouseDown={(e) => e.preventDefault()} // Prevent blur on toolbar click
     >
         {/* Font Controls */}
         <div className="relative group p-2 rounded hover:bg-gray-600 transition-colors" title="Font Family">
             <FontFamilyIcon />
-            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 p-1 bg-gray-700 rounded-md opacity-0 group-hover:opacity-100 invisible group-hover:visible transition-opacity flex flex-col items-start w-40 max-h-60 overflow-y-auto z-10">
+            <div className={`${commonDropdownClasses} ${dropdownPositionClass} p-1 flex flex-col items-start w-40 max-h-60 overflow-y-auto z-10`}>
                 {FONT_FAMILIES.map(font => (
                     <button
                         key={font}
@@ -74,7 +83,7 @@ export const TextToolbar: React.FC<TextToolbarProps> = ({ position, onCommand })
         </div>
         <div className="relative group p-2 rounded hover:bg-gray-600 transition-colors" title="Font Size">
             <TextSizeIcon/>
-            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 p-2 bg-gray-700 rounded-md opacity-0 group-hover:opacity-100 invisible group-hover:visible transition-opacity">
+            <div className={`${commonDropdownClasses} ${dropdownPositionClass} p-2`}>
                 <input 
                     type="range" 
                     min="1" 

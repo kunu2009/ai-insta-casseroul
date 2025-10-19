@@ -11,7 +11,7 @@ interface EditableProps {
 
 const Editable: React.FC<EditableProps> = ({ html, onChange, className, tagName = 'div', style }) => {
     const elementRef = useRef<HTMLElement>(null);
-    const [toolbarState, setToolbarState] = useState<{ show: boolean; top: number; left: number }>({ show: false, top: 0, left: 0 });
+    const [toolbarState, setToolbarState] = useState<{ show: boolean; top: number; left: number; placement: 'top' | 'bottom' }>({ show: false, top: 0, left: 0, placement: 'top' });
 
     useEffect(() => {
         if (elementRef.current && html !== elementRef.current.innerHTML) {
@@ -24,13 +24,18 @@ const Editable: React.FC<EditableProps> = ({ html, onChange, className, tagName 
         if (selection && !selection.isCollapsed) {
             const range = selection.getRangeAt(0);
             const rect = range.getBoundingClientRect();
+            const TOOLBAR_HEIGHT = 60; // A safe estimation of the toolbar height
+
+            const isSpaceAbove = rect.top > TOOLBAR_HEIGHT;
+            
             setToolbarState({
                 show: true,
-                top: rect.top + window.scrollY,
+                top: isSpaceAbove ? rect.top + window.scrollY : rect.bottom + window.scrollY,
                 left: rect.left + window.scrollX + rect.width / 2,
+                placement: isSpaceAbove ? 'top' : 'bottom'
             });
         } else {
-            setToolbarState({ show: false, top: 0, left: 0 });
+            setToolbarState(prev => ({ ...prev, show: false }));
         }
     };
     
@@ -41,7 +46,7 @@ const Editable: React.FC<EditableProps> = ({ html, onChange, className, tagName 
         // Delay hiding to allow toolbar clicks to register
         setTimeout(() => {
             if (document.activeElement !== elementRef.current) {
-                setToolbarState({ show: false, top: 0, left: 0 });
+                setToolbarState({ show: false, top: 0, left: 0, placement: 'top' });
             }
         }, 150);
     };
@@ -105,7 +110,7 @@ const Editable: React.FC<EditableProps> = ({ html, onChange, className, tagName 
 
     return (
         <>
-            {toolbarState.show && <TextToolbar position={toolbarState} onCommand={handleCommand} />}
+            {toolbarState.show && <TextToolbar position={{top: toolbarState.top, left: toolbarState.left}} placement={toolbarState.placement} onCommand={handleCommand} />}
             {React.createElement(tagName, {
                 ref: elementRef,
                 className,
