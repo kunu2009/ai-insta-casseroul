@@ -1,13 +1,14 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import JSZip from 'jszip';
 import html2canvas from 'html2canvas';
-import { SlideContent, TemplateId } from '../types';
+import { SlideContent, TemplateId, ImageGenOptions } from '../types';
 import { generateCarouselContent, generateImageFromPrompt } from '../services/geminiService';
 import { MagicWandIcon, LightBulbIcon, BrandIcon, DownloadIcon, SaveIcon, TrashIcon, PlusIcon, UndoIcon, RedoIcon } from './icons';
 import Loader from './Loader';
 import SlideCard from './SlideCard';
 import VisualCarouselPreview from './VisualCarouselPreview';
 import { TemplateSelector } from './TemplateSelector';
+import { ImageGenModal } from './ImageGenModal';
 
 interface CarouselGeneratorProps {
     apiKey: string;
@@ -38,6 +39,11 @@ export const CarouselGenerator: React.FC<CarouselGeneratorProps> = ({ apiKey, on
   // Undo/Redo state
   const [history, setHistory] = useState<SlideContent[][]>([]);
   const [historyIndex, setHistoryIndex] = useState<number>(-1);
+
+  // Image Gen Modal State
+  const [isImageGenerating, setIsImageGenerating] = useState<boolean>(false);
+  const [imageGenModal, setImageGenModal] = useState<{ isOpen: boolean; slideIndex: number | null }>({ isOpen: false, slideIndex: null });
+
 
   useEffect(() => {
     loadDraft();
@@ -161,7 +167,7 @@ export const CarouselGenerator: React.FC<CarouselGeneratorProps> = ({ apiKey, on
       if (slidesWithContent.length > 0) {
         const firstSlide = slidesWithContent[0];
         try {
-            const imageUrl = await generateImageFromPrompt(firstSlide, apiKey);
+            const imageUrl = await generateImageFromPrompt(firstSlide, { aspectRatio: '1:1', style: 'Minimalist' }, apiKey);
             slidesWithContent[0] = { ...firstSlide, imageUrls: [imageUrl], selectedImageIndex: 0 };
         } catch (imageError) {
             console.error(`Failed to generate AI image for slide 1:`, imageError);
@@ -218,17 +224,24 @@ export const CarouselGenerator: React.FC<CarouselGeneratorProps> = ({ apiKey, on
       );
   };
 
-  const handleRegenerateImage = async (slideIndex: number) => {
+  const handleOpenImageGenModal = (slideIndex: number) => {
     if (!apiKey) {
-        onError("Please set your Gemini API key in the settings before regenerating images.");
+        onError("Please set your Gemini API key in the settings before generating images.");
         onRequireApiKey();
         return;
     }
+    setImageGenModal({ isOpen: true, slideIndex });
+  };
+
+  const handleGenerateWithNewOptions = async (options: ImageGenOptions) => {
+    if (imageGenModal.slideIndex === null) return;
+
+    setIsImageGenerating(true);
+    const slideIndex = imageGenModal.slideIndex;
     const slideToRegenerate = slides[slideIndex];
-    if (!slideToRegenerate) return;
-    
+
     try {
-        const newImageUrl = await generateImageFromPrompt(slideToRegenerate, apiKey);
+        const newImageUrl = await generateImageFromPrompt(slideToRegenerate, options, apiKey);
         setSlidesWithHistory(currentSlides =>
             currentSlides.map((slide, i) => {
                 if (i === slideIndex) {
@@ -242,9 +255,13 @@ export const CarouselGenerator: React.FC<CarouselGeneratorProps> = ({ apiKey, on
                 return slide;
             })
         );
+        setImageGenModal({ isOpen: false, slideIndex: null }); // Close modal on success
     } catch (err) {
         console.error("Failed to regenerate image", err);
-        onNotification(err instanceof Error ? err.message : "Failed to regenerate image. Please try again.");
+        onError(err instanceof Error ? err.message : "Failed to regenerate image. Please try again.");
+        // Don't close modal on error, so user can try again
+    } finally {
+        setIsImageGenerating(false);
     }
   };
 
@@ -449,7 +466,7 @@ export const CarouselGenerator: React.FC<CarouselGeneratorProps> = ({ apiKey, on
                     slide={slide}
                     index={index}
                     onImageUpload={handleSlideImageUpload}
-                    onRegenerateImage={() => handleRegenerateImage(index)}
+                    onRegenerateImage={handleOpenImageGenModal}
                     onSelectImage={handleSelectImage}
                     onDragStart={() => handleDragStart(index)}
                     onDrop={() => handleDrop(index)}
@@ -485,6 +502,15 @@ export const CarouselGenerator: React.FC<CarouselGeneratorProps> = ({ apiKey, on
             </div>
             </div>
         </div>
+        {imageGenModal.isOpen && imageGenModal.slideIndex !== null && (
+            <ImageGenModal
+                isOpen={imageGenModal.isOpen}
+                onClose={() => setImageGenModal({ isOpen: false, slideIndex: null })}
+                onGenerate={handleGenerateWithNewOptions}
+                imagePrompt={slides[imageGenModal.slideIndex]?.imagePrompt || ''}
+                isGenerating={isImageGenerating}
+            />
+        )}
     </div>
   );
 };
