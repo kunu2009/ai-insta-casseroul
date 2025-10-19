@@ -1,7 +1,7 @@
 import React from 'react';
 
 export const MagicWandIcon: React.FC<{ className?: string }> = ({ className = "w-6 h-6" }) => (
-  <svg xmlns="http://www.w.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
     <path strokeLinecap="round" strokeLinejoin="round" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2zM5 12h.01M19 12h.01M12 5V3M8 5l-1-1m8 2l1-1" />
   </svg>
 );
@@ -141,5 +141,13 @@ export const TextShadowIcon: React.FC<{ className?: string }> = ({ className = "
 export const TextOutlineIcon: React.FC<{ className?: string }> = ({ className = "w-5 h-5" }) => (
     <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} fill="none">
         <path strokeLinecap="round" strokeLinejoin="round" d="M12 4L4 20h2l2-5h8l2 5h2L12 4zm-1.25 9L12 7.67 13.25 13H10.75z"/>
+    </svg>
+);
+
+export const FontFamilyIcon: React.FC<{ className?: string }> = ({ className = "w-5 h-5" }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+        <polyline points="4 7 4 4 20 4 20 7"/>
+        <line x1="9" y1="20" x2="15" y2="20"/>
+        <line x1="12" y1="4" x2="12" y2="20"/>
     </svg>
 );
