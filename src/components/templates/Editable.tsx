@@ -96,9 +96,6 @@ const Editable: React.FC<EditableProps> = ({ html, onChange, className, tagName 
             case 'textOutline':
                 toggleSpanStyle({ webkitTextStroke: '1px black' });
                 break;
-            case 'strikeThrough':
-                 document.execCommand('strikeThrough', false, value);
-                 break;
             default:
                 document.execCommand(command, false, value);
                 break;
