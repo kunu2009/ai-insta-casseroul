@@ -180,9 +180,12 @@ const App: React.FC = () => {
       setSlides(currentSlides => 
         currentSlides.map((slide, i) => {
             if (i === slideIndex) {
-                const newImageUrls = [...slide.imageUrls];
-                newImageUrls[slide.selectedImageIndex] = newImageUrl;
-                return { ...slide, imageUrls: newImageUrls };
+                const newImageUrls = [...slide.imageUrls, newImageUrl];
+                return { 
+                    ...slide, 
+                    imageUrls: newImageUrls,
+                    selectedImageIndex: newImageUrls.length - 1 
+                };
             }
             return slide;
         })
@@ -224,6 +227,32 @@ const App: React.FC = () => {
         currentSlides.map((slide, i) =>
             i === slideIndex ? { ...slide, selectedImageIndex: imageIndex } : slide
         )
+    );
+  };
+
+  const handleDeleteImage = (slideIndex: number, imageIndex: number) => {
+    setSlides(currentSlides =>
+        currentSlides.map((slide, i) => {
+            if (i === slideIndex && slide.imageUrls.length > 1) { // Prevent deleting the last image
+                const newImageUrls = slide.imageUrls.filter((_, idx) => idx !== imageIndex);
+                
+                let newSelectedImageIndex = slide.selectedImageIndex;
+                if (imageIndex === newSelectedImageIndex) {
+                    // If we deleted the selected image, select the first one available
+                    newSelectedImageIndex = 0;
+                } else if (imageIndex < newSelectedImageIndex) {
+                    // If we deleted an image before the selected one, shift the index down
+                    newSelectedImageIndex -= 1;
+                }
+                
+                return {
+                    ...slide,
+                    imageUrls: newImageUrls,
+                    selectedImageIndex: newSelectedImageIndex,
+                };
+            }
+            return slide;
+        })
     );
   };
 
@@ -421,6 +450,7 @@ const App: React.FC = () => {
                       onDragStart={() => handleDragStart(index)}
                       onDrop={() => handleDrop(index)}
                       onDelete={() => handleDeleteSlide(index)}
+                      onDeleteImage={handleDeleteImage}
                     />
                 ))}
                 {slides.length > 0 && (

@@ -48,6 +48,7 @@ const ImageLoader: React.FC<ImageLoaderProps> = ({ src, alt, className = '' }) =
             )}
             {src && (
                 <img
+                    key={src}
                     src={src}
                     alt={alt}
                     onLoad={handleLoad}

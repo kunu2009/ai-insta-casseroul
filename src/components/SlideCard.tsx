@@ -8,6 +8,7 @@ interface SlideCardProps {
   onImageUpload: (slideIndex: number, imageUrl: string) => void;
   onRegenerateImage: (slideIndex: number) => Promise<void>;
   onSelectImage: (slideIndex: number, imageIndex: number) => void;
+  onDeleteImage: (slideIndex: number, imageIndex: number) => void;
   onDragStart: () => void;
   onDrop: () => void;
   onDelete: () => void;
@@ -22,7 +23,7 @@ const blobToBase64 = (blob: Blob): Promise<string> => {
     });
 };
 
-const SlideCard: React.FC<SlideCardProps> = ({ slide, index, onImageUpload, onRegenerateImage, onSelectImage, onDragStart, onDrop, onDelete }) => {
+const SlideCard: React.FC<SlideCardProps> = ({ slide, index, onImageUpload, onRegenerateImage, onSelectImage, onDeleteImage, onDragStart, onDrop, onDelete }) => {
   const [copied, setCopied] = useState(false);
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
@@ -116,13 +117,28 @@ const SlideCard: React.FC<SlideCardProps> = ({ slide, index, onImageUpload, onRe
         <div className="w-full overflow-x-auto pb-2 mb-1">
           <div className="flex items-center gap-2 w-max">
               {slide.imageUrls.map((url, i) => (
-                  <button 
-                    key={i} 
-                    onClick={() => onSelectImage(index, i)} 
-                    className={`flex-shrink-0 w-14 h-14 rounded-md overflow-hidden border-2 transition-all duration-200 ${i === slide.selectedImageIndex ? 'border-purple-500 scale-105 shadow-lg' : 'border-transparent hover:border-gray-500'}`}
-                  >
-                      <img src={url} alt={`Option ${i+1}`} className="w-full h-full object-cover" />
-                  </button>
+                  <div key={i} className="relative group/thumbnail">
+                      <button 
+                        onClick={() => onSelectImage(index, i)} 
+                        className={`flex-shrink-0 w-14 h-14 rounded-md overflow-hidden border-2 transition-all duration-200 ${i === slide.selectedImageIndex ? 'border-purple-500 scale-105 shadow-lg' : 'border-transparent hover:border-gray-500'}`}
+                      >
+                          <img src={url} alt={`Option ${i+1}`} className="w-full h-full object-cover" />
+                      </button>
+                      {slide.imageUrls.length > 1 && (
+                          <button
+                              onClick={(e) => {
+                                  e.stopPropagation();
+                                  onDeleteImage(index, i);
+                              }}
+                              className="absolute top-0 right-0 -mt-1.5 -mr-1.5 bg-red-600 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs opacity-0 group-hover/thumbnail:opacity-100 transition-opacity hover:bg-red-700 transform hover:scale-110"
+                              aria-label={`Delete image option ${i + 1}`}
+                          >
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                          </button>
+                      )}
+                  </div>
               ))}
           </div>
         </div>
