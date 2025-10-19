@@ -43,7 +43,7 @@ export const generateGif = (options: GifGenerationOptions): Promise<string> => {
             }
         }
 
-        gif.on('finished', (blob) => {
+        gif.on('finished', (blob: Blob) => {
             const url = URL.createObjectURL(blob);
             resolve(url);
         });
