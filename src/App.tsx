@@ -136,7 +136,7 @@ const App: React.FC = () => {
         const firstSlide = slidesWithContent[0];
         try {
             // Attempt to generate the first image with AI
-            const imageUrl = await generateImageFromPrompt(firstSlide.imagePrompt, apiKey);
+            const imageUrl = await generateImageFromPrompt(firstSlide, apiKey);
             slidesWithContent[0] = { ...firstSlide, imageUrls: [imageUrl], selectedImageIndex: 0 };
         } catch (imageError) {
             console.error(`Failed to generate AI image for slide 1:`, imageError);
@@ -202,7 +202,7 @@ const App: React.FC = () => {
     if (!slideToRegenerate) return;
     
     try {
-        const newImageUrl = await generateImageFromPrompt(slideToRegenerate.imagePrompt, apiKey);
+        const newImageUrl = await generateImageFromPrompt(slideToRegenerate, apiKey);
         setSlides(currentSlides =>
             currentSlides.map((slide, i) => {
                 if (i === slideIndex) {
