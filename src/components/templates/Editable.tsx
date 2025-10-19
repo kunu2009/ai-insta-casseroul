@@ -99,10 +99,15 @@ const Editable: React.FC<EditableProps> = ({ html, onChange, className, tagName 
                 toggleSpanStyle({ textShadow: '2px 2px 4px rgba(0,0,0,0.5)' });
                 break;
             case 'textOutline':
+// FIX: Corrected CSS property name from 'WebkitTextStroke' to 'webkitTextStroke' to match CSSStyleDeclaration type.
                 toggleSpanStyle({ webkitTextStroke: '1px black' });
                 break;
             default:
                 document.execCommand(command, false, value);
+                // Immediately update state after the command to persist style changes
+                if (elementRef.current) {
+                    onChange(elementRef.current.innerHTML);
+                }
                 break;
         }
         elementRef.current?.focus();
