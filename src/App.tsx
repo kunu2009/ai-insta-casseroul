@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { SlideContent } from './types';
 import { SettingsIcon, CarouselIcon, CaptionIcon } from './components/icons';
 import { SettingsModal } from './components/SettingsModal';
 import { CaptionGenerator } from './components/CaptionGenerator';
