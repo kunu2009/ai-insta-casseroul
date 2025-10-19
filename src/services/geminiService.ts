@@ -42,14 +42,15 @@ export const generateCarouselContent = async (topic: string, apiKey: string): Pr
         throw new Error("Invalid structure received from API. Could not find a JSON object.");
     }
 
-    const parsedData = JSON.parse(match[0]) as { slides: Omit<SlideContent, 'imageUrls' | 'selectedImageIndex'>[] };
+    const parsedData = JSON.parse(match[0]) as { slides: Omit<SlideContent, 'id' | 'imageUrls' | 'selectedImageIndex'>[] };
 
     if (!parsedData.slides || !Array.isArray(parsedData.slides)) {
       throw new Error("Invalid data structure in parsed JSON.");
     }
     
-    return parsedData.slides.map(slide => ({
+    return parsedData.slides.map((slide, index) => ({
       ...slide,
+      id: `slide_${Date.now()}_${index}`,
       content: slide.content.map(c => String(c)), // Ensure content items are strings
       imageUrls: [],
       selectedImageIndex: -1,

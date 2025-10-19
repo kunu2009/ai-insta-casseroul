@@ -1,4 +1,5 @@
 export interface SlideContent {
+  id: string;
   title: string;
   content: string[];
   imagePrompt: string;

@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import JSZip from 'jszip';
 import html2canvas from 'html2canvas';
 import { SlideContent, TemplateId } from './types';
@@ -30,6 +30,7 @@ const App: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [apiKey, setApiKey] = useState<string>('');
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const draggedSlideIndex = useRef<number | null>(null);
 
   useEffect(() => {
     loadDraft();
@@ -101,7 +102,8 @@ const App: React.FC = () => {
             { title: 'Download & Share', content: ['When you\'re ready, download all slides as a zip file.'], imagePrompt: 'social media, sharing' }
         ];
 
-        const generatedSlides = sampleSlidesData.map((slide, index) => ({
+        const generatedSlides: SlideContent[] = sampleSlidesData.map((slide, index) => ({
+            id: `sample_${Date.now()}_${index}`,
             ...slide,
             imageUrls: [`https://source.unsplash.com/1080x1080/?${encodeURIComponent(slide.imagePrompt)}&random=${index}`],
             selectedImageIndex: 0,
@@ -238,6 +240,24 @@ const App: React.FC = () => {
             i === index ? { ...slide, [field]: value } : slide
         )
       );
+  };
+
+  const handleDragStart = (index: number) => {
+      draggedSlideIndex.current = index;
+  };
+
+  const handleDrop = (dropIndex: number) => {
+      if (draggedSlideIndex.current === null) return;
+
+      const dragIndex = draggedSlideIndex.current;
+      if (dragIndex === dropIndex) return;
+
+      const newSlides = [...slides];
+      const [draggedItem] = newSlides.splice(dragIndex, 1);
+      newSlides.splice(dropIndex, 0, draggedItem);
+      
+      setSlides(newSlides);
+      draggedSlideIndex.current = null;
   };
   
   const handleDownload = async () => {
@@ -378,12 +398,14 @@ const App: React.FC = () => {
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                             {slides.map((slide, index) => (
                               <SlideCard 
-                                key={index} 
+                                key={slide.id} 
                                 slide={slide} 
                                 index={index} 
                                 onImageUpload={handleSlideImageUpload}
                                 onRegenerateImage={handleRegenerateImage}
                                 onSelectImage={handleSelectImage}
+                                onDragStart={() => handleDragStart(index)}
+                                onDrop={() => handleDrop(index)}
                               />
                             ))}
                         </div>
