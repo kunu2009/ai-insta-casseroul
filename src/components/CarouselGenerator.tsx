@@ -3,12 +3,13 @@ import JSZip from 'jszip';
 import html2canvas from 'html2canvas';
 import { SlideContent, TemplateId, ImageGenOptions } from '../types';
 import { generateCarouselContent, generateImageFromPrompt } from '../services/geminiService';
-import { MagicWandIcon, LightBulbIcon, BrandIcon, DownloadIcon, SaveIcon, TrashIcon, PlusIcon, UndoIcon, RedoIcon } from './icons';
+import { MagicWandIcon, LightBulbIcon, BrandIcon, DownloadIcon, SaveIcon, TrashIcon, PlusIcon, UndoIcon, RedoIcon, GifIcon } from './icons';
 import Loader from './Loader';
 import SlideCard from './SlideCard';
 import VisualCarouselPreview from './VisualCarouselPreview';
 import { TemplateSelector } from './TemplateSelector';
 import { ImageGenModal } from './ImageGenModal';
+import { GifExportModal } from './GifExportModal';
 
 interface CarouselGeneratorProps {
     apiKey: string;
@@ -40,9 +41,10 @@ export const CarouselGenerator: React.FC<CarouselGeneratorProps> = ({ apiKey, on
   const [history, setHistory] = useState<SlideContent[][]>([]);
   const [historyIndex, setHistoryIndex] = useState<number>(-1);
 
-  // Image Gen Modal State
+  // Modal States
   const [isImageGenerating, setIsImageGenerating] = useState<boolean>(false);
   const [imageGenModal, setImageGenModal] = useState<{ isOpen: boolean; slideIndex: number | null }>({ isOpen: false, slideIndex: null });
+  const [isGifModalOpen, setIsGifModalOpen] = useState<boolean>(false);
 
 
   useEffect(() => {
@@ -448,6 +450,10 @@ export const CarouselGenerator: React.FC<CarouselGeneratorProps> = ({ apiKey, on
                         <TrashIcon className="w-4 h-4" />
                         Clear
                     </button>
+                    <button onClick={() => setIsGifModalOpen(true)} disabled={slides.length === 0} className="flex items-center justify-center gap-2 px-4 py-2 bg-pink-600 text-white font-semibold rounded-lg shadow-md hover:bg-pink-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
+                        <GifIcon className="w-5 h-5"/>
+                        Export GIF
+                    </button>
                     <button onClick={handleDownload} disabled={isZipping || slides.length === 0} className="flex items-center justify-center gap-2 px-4 py-2 bg-purple-600 text-white font-semibold rounded-lg shadow-md hover:bg-purple-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
                         <DownloadIcon className="w-5 h-5"/>
                         {isZipping ? 'Zipping...' : 'Download'}
@@ -509,6 +515,13 @@ export const CarouselGenerator: React.FC<CarouselGeneratorProps> = ({ apiKey, on
                 onGenerate={handleGenerateWithNewOptions}
                 imagePrompt={slides[imageGenModal.slideIndex]?.imagePrompt || ''}
                 isGenerating={isImageGenerating}
+            />
+        )}
+        {isGifModalOpen && (
+            <GifExportModal
+                isOpen={isGifModalOpen}
+                onClose={() => setIsGifModalOpen(false)}
+                slideCount={slides.length}
             />
         )}
     </div>
