@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { SlideContent } from '../types';
-import { CopyIcon, CheckIcon, UploadIcon, RegenerateIcon, GripVerticalIcon } from './icons';
+import { CopyIcon, CheckIcon, UploadIcon, RegenerateIcon, GripVerticalIcon, TrashIcon } from './icons';
 
 interface SlideCardProps {
   slide: SlideContent;
@@ -10,6 +10,7 @@ interface SlideCardProps {
   onSelectImage: (slideIndex: number, imageIndex: number) => void;
   onDragStart: () => void;
   onDrop: () => void;
+  onDelete: () => void;
 }
 
 const blobToBase64 = (blob: Blob): Promise<string> => {
@@ -21,7 +22,7 @@ const blobToBase64 = (blob: Blob): Promise<string> => {
     });
 };
 
-const SlideCard: React.FC<SlideCardProps> = ({ slide, index, onImageUpload, onRegenerateImage, onSelectImage, onDragStart, onDrop }) => {
+const SlideCard: React.FC<SlideCardProps> = ({ slide, index, onImageUpload, onRegenerateImage, onSelectImage, onDragStart, onDrop, onDelete }) => {
   const [copied, setCopied] = useState(false);
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
@@ -75,7 +76,7 @@ const SlideCard: React.FC<SlideCardProps> = ({ slide, index, onImageUpload, onRe
       {isDragOver && <div className="absolute top-0 left-0 right-0 h-1.5 bg-purple-500 rounded-t-lg z-10" />}
 
       <div className="flex justify-between items-start mb-3">
-        <h3 className="text-lg font-bold text-white pr-16">
+        <h3 className="text-lg font-bold text-white pr-24">
           <span className="text-purple-400 mr-2">#{index + 1}</span>
           {slide.title}
         </h3>
@@ -87,6 +88,13 @@ const SlideCard: React.FC<SlideCardProps> = ({ slide, index, onImageUpload, onRe
               aria-label="Copy slide content"
             >
               {copied ? <CheckIcon className="w-5 h-5 text-green-400" /> : <CopyIcon className="w-5 h-5" />}
+            </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); onDelete(); }}
+              className="p-2 rounded-md hover:bg-red-500/20 transition-colors text-gray-400 hover:text-red-400"
+              aria-label="Delete slide"
+            >
+              <TrashIcon className="w-5 h-5" />
             </button>
         </div>
       </div>

@@ -3,7 +3,7 @@ import JSZip from 'jszip';
 import html2canvas from 'html2canvas';
 import { SlideContent, TemplateId } from './types';
 import { generateCarouselContent, generateImageFromPrompt } from './services/geminiService';
-import { SettingsIcon, MagicWandIcon, LightBulbIcon, BrandIcon, DownloadIcon, SaveIcon, TrashIcon } from './components/icons';
+import { SettingsIcon, MagicWandIcon, LightBulbIcon, BrandIcon, DownloadIcon, SaveIcon, TrashIcon, PlusIcon } from './components/icons';
 import Loader from './components/Loader';
 import SlideCard from './components/SlideCard';
 import VisualCarouselPreview from './components/VisualCarouselPreview';
@@ -108,7 +108,7 @@ const App: React.FC = () => {
         const generatedSlides: SlideContent[] = sampleSlidesData.map((slide, index) => ({
             id: `sample_${Date.now()}_${index}`,
             ...slide,
-            imageUrls: [`https://source.unsplash.com/1080x1080/?${encodeURIComponent(slide.imagePrompt)}&random=${index}`],
+            imageUrls: [`https://picsum.photos/seed/${encodeURIComponent(slide.imagePrompt)}-${index}/1080/1080`],
             selectedImageIndex: 0,
         }));
         
@@ -141,7 +141,7 @@ const App: React.FC = () => {
         } catch (imageError) {
             console.error(`Failed to generate AI image for slide 1:`, imageError);
             setNotification("AI image generation failed. Using stock photos as a fallback.");
-            const fallbackUrl = `https://source.unsplash.com/1080x1080/?${encodeURIComponent(firstSlide.imagePrompt)}`;
+            const fallbackUrl = `https://picsum.photos/seed/${encodeURIComponent(firstSlide.imagePrompt)}/1080/1080`;
             slidesWithContent[0] = { ...firstSlide, imageUrls: [fallbackUrl], selectedImageIndex: 0 };
         }
 
@@ -150,7 +150,7 @@ const App: React.FC = () => {
             if (index > 0 && (!slide.imageUrls || slide.imageUrls.length === 0)) {
                 return {
                     ...slide,
-                    imageUrls: [`https://source.unsplash.com/1080x1080/?${encodeURIComponent(slide.imagePrompt)}&random=${index}`],
+                    imageUrls: [`https://picsum.photos/seed/${encodeURIComponent(slide.imagePrompt)}-${index}/1080/1080`],
                     selectedImageIndex: 0,
                 };
             }
@@ -253,6 +253,24 @@ const App: React.FC = () => {
       draggedSlideIndex.current = null;
   };
   
+  const handleAddSlide = () => {
+    const newSlide: SlideContent = {
+        id: `manual_${Date.now()}`,
+        title: 'New Slide Title',
+        content: ['Click to edit this content.', 'Add another point here.'],
+        imagePrompt: 'abstract technology background',
+        imageUrls: [`https://picsum.photos/seed/new-slide-${Date.now()}/1080/1080`],
+        selectedImageIndex: 0,
+    };
+    setSlides(currentSlides => [...currentSlides, newSlide]);
+  };
+
+  const handleDeleteSlide = (slideIndex: number) => {
+      if (window.confirm('Are you sure you want to delete this slide?')) {
+          setSlides(currentSlides => currentSlides.filter((_, i) => i !== slideIndex));
+      }
+  };
+
   const handleDownload = async () => {
       if(slides.length === 0 || !slides.every(s => s.imageUrls.length > 0)) return;
       setIsZipping(true);
@@ -358,72 +376,89 @@ const App: React.FC = () => {
             </div>
           )}
 
-          <div className="min-h-[450px] flex items-center justify-center">
-            {isLoading && slides.length === 0 ? <Loader /> : error ? (
-              <div className="text-center text-red-400 bg-red-900/20 p-6 rounded-lg border border-red-500/50">
-                <p className="font-bold">Oops! Something went wrong.</p>
-                <p className="text-sm whitespace-pre-wrap">{error}</p>
+          {error && (
+            <div className="bg-red-900/30 border border-red-600 text-red-300 px-4 py-3 rounded-lg relative mb-6 whitespace-pre-wrap" role="alert">
+                <span className="block sm:inline">{error}</span>
+                <button onClick={() => setError(null)} className="absolute top-0 bottom-0 right-0 px-4 py-3" aria-label="Close error">
+                     <svg className="fill-current h-6 w-6 text-red-400" role="button" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><title>Close</title><path d="M14.348 14.849a1.2 1.2 0 0 1-1.697 0L10 11.819l-2.651 3.029a1.2 1.2 0 1 1-1.697-1.697l2.758-3.15-2.759-3.152a1.2 1.2 0 1 1 1.697-1.697L10 8.183l2.651-3.031a1.2 1.2 0 1 1 1.697 1.697l-2.758 3.152 2.758 3.15a1.2 1.2 0 0 1 0 1.698z"/></svg>
+                </button>
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr,420px] gap-8">
+            <div className="order-2 lg:order-1">
+              <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-2xl font-bold text-gray-300">Content & Assets</h2>
+                  <div className="flex items-center gap-2">
+                      <div className={`flex items-center gap-1 text-sm text-gray-400 transition-opacity duration-500 ${isSaving ? 'opacity-100' : 'opacity-0'}`}>
+                          <SaveIcon className="w-4 h-4" />
+                          <span>Saved!</span>
+                      </div>
+                      <button onClick={clearDraft} className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-red-400 transition-colors p-2 rounded-md hover:bg-red-500/10">
+                          <TrashIcon className="w-4 h-4" />
+                          Clear
+                      </button>
+                      <button onClick={handleDownload} disabled={isZipping || slides.length === 0} className="flex items-center justify-center gap-2 px-4 py-2 bg-purple-600 text-white font-semibold rounded-lg shadow-md hover:bg-purple-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
+                          <DownloadIcon className="w-5 h-5"/>
+                          {isZipping ? 'Zipping...' : 'Download'}
+                      </button>
+                  </div>
               </div>
-            ) : slides.length > 0 ? (
-                <div className="w-full">
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-                        <VisualCarouselPreview 
-                          slides={slides} 
-                          logo={logo} 
-                          templateId={templateId}
-                          onSlideContentChange={handleSlideContentChange}
-                        />
-                        <div className="flex flex-col gap-4">
-                            <h2 className="text-2xl font-bold text-center lg:text-left">Design & Finalize</h2>
-                            <TemplateSelector currentTemplate={templateId} onSelectTemplate={setTemplateId} />
-                             <div className="flex flex-wrap items-center justify-center lg:justify-start gap-3 mt-2">
-                                <button
-                                    onClick={handleDownload}
-                                    disabled={isZipping || !slides.every(s => s.imageUrls.length > 0)}
-                                    className="flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white font-semibold rounded-lg shadow-lg hover:bg-green-700 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
-                                >
-                                    <DownloadIcon className="w-5 h-5"/>
-                                    {isZipping ? 'Zipping...' : 'Download Images'}
-                                </button>
-                                <button onClick={saveDraft} className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow-lg hover:bg-blue-700 transition-all duration-300 text-sm">
-                                    <SaveIcon className="w-5 h-5"/>
-                                    {isSaving ? 'Saved!' : 'Save Draft'}
-                                </button>
-                                <button onClick={clearDraft} className="flex items-center justify-center gap-2 px-4 py-2 bg-red-600 text-white font-semibold rounded-lg shadow-lg hover:bg-red-700 transition-all duration-300 text-sm">
-                                    <TrashIcon className="w-5 h-5"/>
-                                    Clear
-                                </button>
-                             </div>
-                        </div>
-                    </div>
-                    <div className="mt-8 border-t border-gray-700 pt-8">
-                        <h2 className="text-2xl font-bold text-center mb-4">Content & Assets</h2>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                            {slides.map((slide, index) => (
-                              <SlideCard 
-                                key={slide.id} 
-                                slide={slide} 
-                                index={index} 
-                                onImageUpload={handleSlideImageUpload}
-                                onRegenerateImage={handleRegenerateImage}
-                                onSelectImage={handleSelectImage}
-                                onDragStart={() => handleDragStart(index)}
-                                onDrop={() => handleDrop(index)}
-                              />
-                            ))}
-                        </div>
-                    </div>
-                </div>
-            ) : <WelcomeState />}
+              
+              {isLoading && <div className="h-[400px] flex items-center justify-center"><Loader /></div>}
+              
+              {!isLoading && slides.length === 0 && <WelcomeState />}
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+                {slides.map((slide, index) => (
+                    <SlideCard
+                      key={slide.id}
+                      slide={slide}
+                      index={index}
+                      onImageUpload={handleSlideImageUpload}
+                      onRegenerateImage={() => handleRegenerateImage(index)}
+                      onSelectImage={handleSelectImage}
+                      onDragStart={() => handleDragStart(index)}
+                      onDrop={() => handleDrop(index)}
+                      onDelete={() => handleDeleteSlide(index)}
+                    />
+                ))}
+                {slides.length > 0 && (
+                  <button
+                      onClick={handleAddSlide}
+                      className="flex flex-col items-center justify-center bg-gray-800/50 border-2 border-dashed border-gray-700 rounded-lg text-gray-500 hover:text-purple-400 hover:border-purple-500 transition-all duration-200 min-h-[300px] aspect-square"
+                      aria-label="Add a new slide"
+                  >
+                      <PlusIcon className="w-12 h-12 mb-2" />
+                      <span className="font-semibold">Add New Slide</span>
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div className="order-1 lg:order-2 lg:sticky lg:top-8 self-start">
+              <div className="grid grid-cols-1 gap-8">
+                 <VisualCarouselPreview
+                    slides={slides}
+                    logo={logo}
+                    templateId={templateId}
+                    onSlideContentChange={handleSlideContentChange}
+                  />
+                  <TemplateSelector
+                    currentTemplate={templateId}
+                    onSelectTemplate={setTemplateId}
+                  />
+              </div>
+            </div>
           </div>
         </main>
-        <SettingsModal 
-            isOpen={isSettingsModalOpen}
-            onClose={() => setIsSettingsModalOpen(false)}
-            currentApiKey={apiKey}
-            onSave={handleSaveApiKey}
-        />
       </div>
+      <SettingsModal 
+        isOpen={isSettingsModalOpen}
+        onClose={() => setIsSettingsModalOpen(false)}
+        currentApiKey={apiKey}
+        onSave={handleSaveApiKey}
+      />
     </div>
   );
 };
