@@ -16,6 +16,7 @@ interface CarouselGeneratorProps {
     onError: (message: string) => void;
     onNotification: (message: string) => void;
     onRequireApiKey: () => void;
+    initialTopic?: string;
 }
 
 const blobToBase64 = (blob: Blob): Promise<string> => {
@@ -27,7 +28,7 @@ const blobToBase64 = (blob: Blob): Promise<string> => {
     });
 };
 
-export const CarouselGenerator: React.FC<CarouselGeneratorProps> = ({ apiKey, onError, onNotification, onRequireApiKey }) => {
+export const CarouselGenerator: React.FC<CarouselGeneratorProps> = ({ apiKey, onError, onNotification, onRequireApiKey, initialTopic }) => {
   const [topic, setTopic] = useState<string>('');
   const [slides, setSlides] = useState<SlideContent[]>([]);
   const [logo, setLogo] = useState<string | null>(null);
@@ -50,6 +51,12 @@ export const CarouselGenerator: React.FC<CarouselGeneratorProps> = ({ apiKey, on
   useEffect(() => {
     loadDraft();
   }, []);
+  
+  useEffect(() => {
+    if (initialTopic && initialTopic !== topic) {
+      setTopic(initialTopic);
+    }
+  }, [initialTopic]);
 
   useEffect(() => {
     const debounceSave = setTimeout(() => {

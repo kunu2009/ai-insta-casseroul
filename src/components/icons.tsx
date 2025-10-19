@@ -195,3 +195,16 @@ export const GifIcon: React.FC<{ className?: string }> = ({ className = "w-5 h-5
         <path strokeLinecap="round" strokeLinejoin="round" d="M4 4h6v16H4V4zm8 0h3l3 4v12h-6V4zm8 0v4h-4"/>
     </svg>
 );
+
+export const BrainIcon: React.FC<{ className?: string }> = ({ className = "w-5 h-5" }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M4.871 14.718c1.03-2.38 2.22-4.502 3.613-6.422 1.39-1.92 3.063-3.56 4.914-4.834M19.129 14.718c-1.03-2.38-2.22-4.502-3.613-6.422-1.39-1.92-3.063-3.56-4.914-4.834M12 21a9 9 0 110-18 9 9 0 010 18z" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 21a2.25 2.25 0 002.25-2.25v-3.883a2.25 2.25 0 00-.5-1.467l-2.5-3.5a2.25 2.25 0 00-3.5 0l-2.5 3.5a2.25 2.25 0 00-.5 1.467v3.883A2.25 2.25 0 0012 21z" />
+    </svg>
+);
+
+export const HashtagIcon: React.FC<{ className?: string }> = ({ className = "w-5 h-5" }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" />
+    </svg>
+);

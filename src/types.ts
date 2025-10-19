@@ -22,3 +22,13 @@ export interface ImageGenOptions {
   style: ImageStyle;
   colorPalette?: string;
 }
+
+export interface Idea {
+  title: string;
+  description: string;
+}
+
+export interface HashtagGroup {
+  category: string;
+  hashtags: string[];
+}

@@ -1,5 +1,5 @@
 import { GoogleGenAI, Modality } from "@google/genai";
-import { SlideContent, ImageGenOptions } from '../types';
+import { SlideContent, ImageGenOptions, Idea, HashtagGroup } from '../types';
 
 // Re-introduce getAiClient to handle user-provided API keys.
 const getAiClient = (apiKey: string) => {
@@ -188,5 +188,106 @@ export const generateCaptions = async (topic: string, apiKey: string): Promise<s
         throw new Error(`Failed to generate captions: ${error.message}`);
     }
     throw new Error("An unknown error occurred while generating captions.");
+  }
+};
+
+export const generateIdeas = async (niche: string, apiKey: string): Promise<Idea[]> => {
+  const ai = getAiClient(apiKey);
+  try {
+    const prompt = `
+      Brainstorm 5-7 engaging Instagram post ideas for the niche: "${niche}".
+      For each idea, provide a catchy title/hook and a brief description of the content.
+
+      IMPORTANT: Respond with ONLY a valid JSON object. Do not include markdown, backticks, or any text outside of the JSON object.
+      The JSON object must have a single root key "ideas", which is an array of objects.
+      Each object must have these exact keys: "title" and "description".
+      - "title": A scroll-stopping hook or title for the post.
+      - "description": A short, 1-2 sentence description of what the post would be about (e.g., a carousel, reel, or single image post).
+      Example format: { "ideas": [{ "title": "...", "description": "..." }] }
+    `;
+      
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: prompt,
+      config: {
+        systemInstruction: "You are a creative social media content strategist who communicates exclusively in valid JSON format. Your sole purpose is to brainstorm engaging Instagram post ideas based on a user's niche.",
+      },
+    });
+
+    const text = response.text;
+    if (!text) {
+        throw new Error("Invalid structure received from API. API response was empty.");
+    }
+    const jsonText = text.trim();
+    const match = jsonText.match(/\{[\s\S]*\}/);
+    if (!match) {
+        throw new Error("Invalid structure received from API. Could not find a JSON object.");
+    }
+
+    const parsedData = JSON.parse(match[0]) as { ideas: Idea[] };
+
+    if (!parsedData.ideas || !Array.isArray(parsedData.ideas) || parsedData.ideas.length === 0) {
+      throw new Error("Invalid data structure in parsed JSON. Expected 'ideas' array.");
+    }
+    
+    return parsedData.ideas;
+  } catch (error) {
+    console.error("Error generating ideas:", error);
+    if (error instanceof Error) {
+        throw new Error(`Failed to generate ideas: ${error.message}`);
+    }
+    throw new Error("An unknown error occurred while generating ideas.");
+  }
+};
+
+
+export const generateHashtags = async (topic: string, apiKey: string): Promise<HashtagGroup[]> => {
+  const ai = getAiClient(apiKey);
+  try {
+    const prompt = `
+      Generate 3 strategic groups of Instagram hashtags for a post about: "${topic}".
+      The groups should be "Broad", "Niche", and "Community".
+      - "Broad" hashtags have high volume and reach a wide audience (e.g., #socialmedia).
+      - "Niche" hashtags are more specific to the topic (e.g., #contentstrategy).
+      - "Community" hashtags are used by specific communities or for challenges (e.g., #socialmediatipsandtricks).
+      Provide 5-7 hashtags for each category.
+
+      IMPORTANT: Respond with ONLY a valid JSON object. Do not include markdown, backticks, or any text outside of the JSON object.
+      The JSON object must have a single root key "hashtagGroups", which is an array of objects.
+      Each object must have these exact keys: "category" and "hashtags" (an array of strings).
+      Example format: { "hashtagGroups": [{ "category": "Broad", "hashtags": ["#...", "#..."] }, ...] }
+    `;
+      
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: prompt,
+      config: {
+        systemInstruction: "You are an expert Instagram marketing strategist who communicates exclusively in valid JSON format. Your sole purpose is to generate categorized groups of relevant hashtags based on a user's topic.",
+      },
+    });
+
+    const text = response.text;
+    if (!text) {
+        throw new Error("Invalid structure received from API. API response was empty.");
+    }
+    const jsonText = text.trim();
+    const match = jsonText.match(/\{[\s\S]*\}/);
+    if (!match) {
+        throw new Error("Invalid structure received from API. Could not find a JSON object.");
+    }
+
+    const parsedData = JSON.parse(match[0]) as { hashtagGroups: HashtagGroup[] };
+
+    if (!parsedData.hashtagGroups || !Array.isArray(parsedData.hashtagGroups) || parsedData.hashtagGroups.length === 0) {
+      throw new Error("Invalid data structure in parsed JSON. Expected 'hashtagGroups' array.");
+    }
+    
+    return parsedData.hashtagGroups;
+  } catch (error) {
+    console.error("Error generating hashtags:", error);
+    if (error instanceof Error) {
+        throw new Error(`Failed to generate hashtags: ${error.message}`);
+    }
+    throw new Error("An unknown error occurred while generating hashtags.");
   }
 };

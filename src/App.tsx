@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { SettingsIcon, CarouselIcon, CaptionIcon } from './components/icons';
+import { SettingsIcon, CarouselIcon, CaptionIcon, BrainIcon, HashtagIcon } from './components/icons';
 import { SettingsModal } from './components/SettingsModal';
 import { CaptionGenerator } from './components/CaptionGenerator';
 import { CarouselGenerator } from './components/CarouselGenerator';
+import { IdeaGenerator } from './components/IdeaGenerator';
+import { HashtagGenerator } from './components/HashtagGenerator';
 
 
 const App: React.FC = () => {
@@ -10,7 +12,8 @@ const App: React.FC = () => {
   const [notification, setNotification] = useState<string | null>(null);
   const [apiKey, setApiKey] = useState<string>('');
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
-  const [activeTool, setActiveTool] = useState<'carousel' | 'caption'>('carousel');
+  const [activeTool, setActiveTool] = useState<'carousel' | 'caption' | 'idea' | 'hashtag'>('carousel');
+  const [initialCarouselTopic, setInitialCarouselTopic] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     const storedApiKey = localStorage.getItem('geminiApiKey');
@@ -23,6 +26,12 @@ const App: React.FC = () => {
       setApiKey(newApiKey);
       localStorage.setItem('geminiApiKey', newApiKey);
   };
+  
+  const handleUseIdea = (ideaTopic: string) => {
+    setInitialCarouselTopic(ideaTopic);
+    setActiveTool('carousel');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   const ToolButton: React.FC<{
     label: string;
@@ -32,7 +41,7 @@ const App: React.FC = () => {
   }> = ({ label, icon, isActive, onClick }) => (
     <button
         onClick={onClick}
-        className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-t-lg border-b-2 transition-colors ${
+        className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-t-lg border-b-2 transition-colors whitespace-nowrap ${
             isActive
                 ? 'border-purple-500 text-white bg-gray-800/50'
                 : 'border-transparent text-gray-400 hover:bg-gray-700/30 hover:text-gray-200'
@@ -85,7 +94,13 @@ const App: React.FC = () => {
           )}
 
           {/* Tool Selector */}
-          <div className="flex border-b border-gray-700 mb-8">
+          <div className="flex border-b border-gray-700 mb-8 overflow-x-auto">
+              <ToolButton
+                  label="Idea Generator"
+                  icon={<BrainIcon />}
+                  isActive={activeTool === 'idea'}
+                  onClick={() => setActiveTool('idea')}
+              />
               <ToolButton
                   label="Carousel Generator"
                   icon={<CarouselIcon />}
@@ -98,7 +113,22 @@ const App: React.FC = () => {
                   isActive={activeTool === 'caption'}
                   onClick={() => setActiveTool('caption')}
               />
+              <ToolButton
+                  label="Hashtag Generator"
+                  icon={<HashtagIcon />}
+                  isActive={activeTool === 'hashtag'}
+                  onClick={() => setActiveTool('hashtag')}
+              />
           </div>
+          
+          {activeTool === 'idea' && (
+              <IdeaGenerator
+                apiKey={apiKey}
+                onError={(msg) => { setError(msg); if(msg) setNotification(null); }}
+                onRequireApiKey={() => setIsSettingsModalOpen(true)}
+                onUseIdea={handleUseIdea}
+              />
+          )}
 
           {activeTool === 'carousel' && (
               <CarouselGenerator
@@ -106,11 +136,23 @@ const App: React.FC = () => {
                 onError={(msg) => { setError(msg); if(msg) setNotification(null); }}
                 onNotification={(msg) => { setNotification(msg); if(msg) setError(null); }}
                 onRequireApiKey={() => setIsSettingsModalOpen(true)}
+                initialTopic={initialCarouselTopic}
               />
           )}
 
           {activeTool === 'caption' && (
               <CaptionGenerator
+                  apiKey={apiKey}
+                  onError={(msg) => {
+                      setError(msg);
+                      if (msg) setNotification(null);
+                  }}
+                  onRequireApiKey={() => setIsSettingsModalOpen(true)}
+              />
+          )}
+
+          {activeTool === 'hashtag' && (
+              <HashtagGenerator
                   apiKey={apiKey}
                   onError={(msg) => {
                       setError(msg);
