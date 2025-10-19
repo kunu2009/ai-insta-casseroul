@@ -65,6 +65,14 @@ export const TextToolbar: React.FC<TextToolbarProps> = ({ position, placement, o
       style={{ top: position.top, left: position.left, transform: transformStyle }}
       onMouseDown={(e) => e.preventDefault()} // Prevent blur on toolbar click
     >
+        {/* Style Controls */}
+        <ToolButton onClick={() => onCommand('bold')} title="Bold"><BoldIcon /></ToolButton>
+        <ToolButton onClick={() => onCommand('italic')} title="Italic"><ItalicIcon /></ToolButton>
+        <ToolButton onClick={() => onCommand('underline')} title="Underline"><UnderlineIcon /></ToolButton>
+        <ToolButton onClick={() => onCommand('strikeThrough')} title="Strikethrough"><StrikethroughIcon /></ToolButton>
+        
+        <div className="w-px h-6 bg-gray-600 mx-1" />
+
         {/* Font Controls */}
         <div className="relative group p-2 rounded hover:bg-gray-600 transition-colors" title="Font Family">
             <FontFamilyIcon />
@@ -103,14 +111,6 @@ export const TextToolbar: React.FC<TextToolbarProps> = ({ position, placement, o
             <PaletteIcon />
             <input ref={colorInputRef} type="color" onChange={handleColorChange} className="absolute inset-0 opacity-0 w-full h-full cursor-pointer" />
         </button>
-
-        <div className="w-px h-6 bg-gray-600 mx-1" />
-
-        {/* Style Controls */}
-        <ToolButton onClick={() => onCommand('bold')} title="Bold"><BoldIcon /></ToolButton>
-        <ToolButton onClick={() => onCommand('italic')} title="Italic"><ItalicIcon /></ToolButton>
-        <ToolButton onClick={() => onCommand('underline')} title="Underline"><UnderlineIcon /></ToolButton>
-        <ToolButton onClick={() => onCommand('strikeThrough')} title="Strikethrough"><StrikethroughIcon /></ToolButton>
 
         <div className="w-px h-6 bg-gray-600 mx-1" />
 
