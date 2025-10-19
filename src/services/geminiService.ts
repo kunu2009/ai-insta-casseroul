@@ -77,12 +77,16 @@ export const generateImageFromPrompt = async (prompt: string, apiKey: string): P
         },
     });
 
-    for (const part of response.candidates[0].content.parts) {
-      if (part.inlineData) {
-        const base64ImageBytes: string = part.inlineData.data;
-        const mimeType = part.inlineData.mimeType;
-        return `data:${mimeType};base64,${base64ImageBytes}`;
-      }
+    const parts = response.candidates?.[0]?.content?.parts;
+
+    if (parts) {
+        for (const part of parts) {
+          if (part.inlineData) {
+            const base64ImageBytes: string = part.inlineData.data;
+            const mimeType = part.inlineData.mimeType;
+            return `data:${mimeType};base64,${base64ImageBytes}`;
+          }
+        }
     }
     
     throw new Error("No image was generated or image data is missing.");
