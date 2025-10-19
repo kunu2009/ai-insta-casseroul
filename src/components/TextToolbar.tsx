@@ -33,9 +33,9 @@ export const TextToolbar: React.FC<TextToolbarProps> = ({ position, placement, o
     onCommand('foreColor', e.target.value);
   };
   
-  const handleSizeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleSizeChange = (e: React.FormEvent<HTMLInputElement>) => {
     // execCommand for fontSize uses values 1-7
-    const value = parseInt(e.target.value);
+    const value = parseInt(e.currentTarget.value);
     if(value >= 1 && value <= 7) {
       onCommand('fontSize', String(value));
     }
@@ -90,7 +90,7 @@ export const TextToolbar: React.FC<TextToolbarProps> = ({ position, placement, o
                     max="7"
                     defaultValue="3"
                     step="1" 
-                    onChange={handleSizeChange} 
+                    onInput={handleSizeChange}
                     className="w-24"
                 />
             </div>
