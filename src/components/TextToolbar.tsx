@@ -5,6 +5,7 @@ interface TextToolbarProps {
   position: { top: number; left: number };
   placement: 'top' | 'bottom';
   onCommand: (command: string, value?: string) => void;
+  activeStyles: Record<string, boolean>;
 }
 
 const FONT_FAMILIES = [
@@ -26,7 +27,7 @@ const FONT_FAMILIES = [
 ];
 
 
-export const TextToolbar: React.FC<TextToolbarProps> = ({ position, placement, onCommand }) => {
+export const TextToolbar: React.FC<TextToolbarProps> = ({ position, placement, onCommand, activeStyles }) => {
   const colorInputRef = useRef<HTMLInputElement>(null);
 
   const handleColorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -41,10 +42,10 @@ export const TextToolbar: React.FC<TextToolbarProps> = ({ position, placement, o
     }
   };
 
-  const ToolButton: React.FC<{ onClick: () => void, children: React.ReactNode, title: string }> = ({ onClick, children, title }) => (
+  const ToolButton: React.FC<{ onClick: () => void, children: React.ReactNode, title: string, isActive?: boolean }> = ({ onClick, children, title, isActive }) => (
     <button
       onMouseDown={(e) => { e.preventDefault(); onClick(); }}
-      className="p-2 rounded hover:bg-gray-600 transition-colors"
+      className={`p-2 rounded hover:bg-gray-600 transition-colors ${isActive ? 'bg-purple-700' : ''}`}
       title={title}
     >
       {children}
@@ -66,10 +67,10 @@ export const TextToolbar: React.FC<TextToolbarProps> = ({ position, placement, o
       onMouseDown={(e) => e.preventDefault()} // Prevent blur on toolbar click
     >
         {/* Style Controls */}
-        <ToolButton onClick={() => onCommand('bold')} title="Bold"><BoldIcon /></ToolButton>
-        <ToolButton onClick={() => onCommand('italic')} title="Italic"><ItalicIcon /></ToolButton>
-        <ToolButton onClick={() => onCommand('underline')} title="Underline"><UnderlineIcon /></ToolButton>
-        <ToolButton onClick={() => onCommand('strikeThrough')} title="Strikethrough"><StrikethroughIcon /></ToolButton>
+        <ToolButton onClick={() => onCommand('bold')} title="Bold" isActive={activeStyles.bold}><BoldIcon /></ToolButton>
+        <ToolButton onClick={() => onCommand('italic')} title="Italic" isActive={activeStyles.italic}><ItalicIcon /></ToolButton>
+        <ToolButton onClick={() => onCommand('underline')} title="Underline" isActive={activeStyles.underline}><UnderlineIcon /></ToolButton>
+        <ToolButton onClick={() => onCommand('strikeThrough')} title="Strikethrough" isActive={activeStyles.strikeThrough}><StrikethroughIcon /></ToolButton>
         
         <div className="w-px h-6 bg-gray-600 mx-1" />
 
@@ -115,15 +116,15 @@ export const TextToolbar: React.FC<TextToolbarProps> = ({ position, placement, o
         <div className="w-px h-6 bg-gray-600 mx-1" />
 
         {/* Alignment Controls */}
-        <ToolButton onClick={() => onCommand('justifyLeft')} title="Align Left"><AlignLeftIcon /></ToolButton>
-        <ToolButton onClick={() => onCommand('justifyCenter')} title="Align Center"><AlignCenterIcon /></ToolButton>
-        <ToolButton onClick={() => onCommand('justifyRight')} title="Align Right"><AlignRightIcon /></ToolButton>
+        <ToolButton onClick={() => onCommand('justifyLeft')} title="Align Left" isActive={activeStyles.justifyLeft}><AlignLeftIcon /></ToolButton>
+        <ToolButton onClick={() => onCommand('justifyCenter')} title="Align Center" isActive={activeStyles.justifyCenter}><AlignCenterIcon /></ToolButton>
+        <ToolButton onClick={() => onCommand('justifyRight')} title="Align Right" isActive={activeStyles.justifyRight}><AlignRightIcon /></ToolButton>
 
         <div className="w-px h-6 bg-gray-600 mx-1" />
 
         {/* Effect Controls */}
-        <ToolButton onClick={() => onCommand('textShadow')} title="Text Shadow"><TextShadowIcon /></ToolButton>
-        <ToolButton onClick={() => onCommand('textOutline')} title="Text Outline"><TextOutlineIcon /></ToolButton>
+        <ToolButton onClick={() => onCommand('textShadow')} title="Text Shadow" isActive={activeStyles.textShadow}><TextShadowIcon /></ToolButton>
+        <ToolButton onClick={() => onCommand('textOutline')} title="Text Outline" isActive={activeStyles.textOutline}><TextOutlineIcon /></ToolButton>
     </div>
   );
 };

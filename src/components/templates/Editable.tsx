@@ -12,6 +12,7 @@ interface EditableProps {
 const Editable: React.FC<EditableProps> = ({ html, onChange, className, tagName = 'div', style }) => {
     const elementRef = useRef<HTMLElement>(null);
     const [toolbarState, setToolbarState] = useState<{ show: boolean; top: number; left: number; placement: 'top' | 'bottom' }>({ show: false, top: 0, left: 0, placement: 'top' });
+    const [activeStyles, setActiveStyles] = useState<Record<string, boolean>>({});
 
     useEffect(() => {
         if (elementRef.current && html !== elementRef.current.innerHTML) {
@@ -19,12 +20,34 @@ const Editable: React.FC<EditableProps> = ({ html, onChange, className, tagName 
         }
     }, [html]);
 
+    const updateActiveStyles = () => {
+        const styles: Record<string, boolean> = {};
+        const commands = ['bold', 'italic', 'underline', 'strikeThrough', 'justifyLeft', 'justifyCenter', 'justifyRight'];
+        commands.forEach(command => {
+            styles[command] = document.queryCommandState(command);
+        });
+
+        const selection = window.getSelection();
+        if (selection && selection.rangeCount > 0) {
+            let node = selection.getRangeAt(0).startContainer;
+            while (node && node !== elementRef.current) {
+                if (node.nodeType === Node.ELEMENT_NODE) {
+                    const element = node as HTMLElement;
+                    if (element.style.textShadow) styles['textShadow'] = true;
+                    if (element.style.webkitTextStroke) styles['textOutline'] = true;
+                }
+                node = node.parentNode!;
+            }
+        }
+        setActiveStyles(styles);
+    };
+
     const handleMouseUp = () => {
         const selection = window.getSelection();
         if (selection && !selection.isCollapsed) {
             const range = selection.getRangeAt(0);
             const rect = range.getBoundingClientRect();
-            const TOOLBAR_HEIGHT = 60; // A safe estimation of the toolbar height
+            const TOOLBAR_HEIGHT = 60; 
 
             const isSpaceAbove = rect.top > TOOLBAR_HEIGHT;
             
@@ -37,13 +60,17 @@ const Editable: React.FC<EditableProps> = ({ html, onChange, className, tagName 
         } else {
             setToolbarState(prev => ({ ...prev, show: false }));
         }
+        updateActiveStyles();
+    };
+
+    const handleKeyUp = () => {
+        updateActiveStyles();
     };
     
     const handleBlur = () => {
         if (elementRef.current) {
             onChange(elementRef.current.innerHTML);
         }
-        // Delay hiding to allow toolbar clicks to register
         setTimeout(() => {
             if (document.activeElement !== elementRef.current) {
                 setToolbarState({ show: false, top: 0, left: 0, placement: 'top' });
@@ -99,23 +126,22 @@ const Editable: React.FC<EditableProps> = ({ html, onChange, className, tagName 
                 toggleSpanStyle({ textShadow: '2px 2px 4px rgba(0,0,0,0.5)' });
                 break;
             case 'textOutline':
-// FIX: Corrected CSS property name from 'WebkitTextStroke' to 'webkitTextStroke' to match CSSStyleDeclaration type.
                 toggleSpanStyle({ webkitTextStroke: '1px black' });
                 break;
             default:
                 document.execCommand(command, false, value);
-                // Immediately update state after the command to persist style changes
                 if (elementRef.current) {
                     onChange(elementRef.current.innerHTML);
                 }
                 break;
         }
         elementRef.current?.focus();
+        setTimeout(updateActiveStyles, 0);
     };
 
     return (
         <>
-            {toolbarState.show && <TextToolbar position={{top: toolbarState.top, left: toolbarState.left}} placement={toolbarState.placement} onCommand={handleCommand} />}
+            {toolbarState.show && <TextToolbar position={{top: toolbarState.top, left: toolbarState.left}} placement={toolbarState.placement} onCommand={handleCommand} activeStyles={activeStyles} />}
             {React.createElement(tagName, {
                 ref: elementRef,
                 className,
@@ -123,6 +149,7 @@ const Editable: React.FC<EditableProps> = ({ html, onChange, className, tagName 
                 contentEditable: true,
                 suppressContentEditableWarning: true,
                 onMouseUp: handleMouseUp,
+                onKeyUp: handleKeyUp,
                 onBlur: handleBlur,
                 dangerouslySetInnerHTML: { __html: html },
             })}
