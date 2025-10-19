@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { SettingsIcon, CarouselIcon, CaptionIcon, BrainIcon, HashtagIcon } from './components/icons';
+import { SettingsIcon, CarouselIcon, CaptionIcon, BrainIcon, HashtagIcon, ProfileIcon, ScriptIcon } from './components/icons';
 import { SettingsModal } from './components/SettingsModal';
 import { CaptionGenerator } from './components/CaptionGenerator';
 import { CarouselGenerator } from './components/CarouselGenerator';
 import { IdeaGenerator } from './components/IdeaGenerator';
 import { HashtagGenerator } from './components/HashtagGenerator';
+import { ProfileBioGenerator } from './components/ProfileBioGenerator';
+import { ReelScriptGenerator } from './components/ReelScriptGenerator';
 
 
 const App: React.FC = () => {
@@ -12,13 +14,20 @@ const App: React.FC = () => {
   const [notification, setNotification] = useState<string | null>(null);
   const [apiKey, setApiKey] = useState<string>('');
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
-  const [activeTool, setActiveTool] = useState<'carousel' | 'caption' | 'idea' | 'hashtag'>('carousel');
+  const [activeTool, setActiveTool] = useState<'carousel' | 'caption' | 'idea' | 'hashtag' | 'bio' | 'script'>('idea');
   const [initialCarouselTopic, setInitialCarouselTopic] = useState<string | undefined>(undefined);
 
   useEffect(() => {
-    const storedApiKey = localStorage.getItem('geminiApiKey');
-    if (storedApiKey) {
-        setApiKey(storedApiKey);
+    // Attempt to get the API key from the environment variable first for Vercel deployment.
+    // Fallback to localStorage for local development.
+    const envApiKey = process.env.API_KEY;
+    if (envApiKey) {
+        setApiKey(envApiKey);
+    } else {
+        const storedApiKey = localStorage.getItem('geminiApiKey');
+        if (storedApiKey) {
+            setApiKey(storedApiKey);
+        }
     }
   }, []);
 
@@ -119,6 +128,18 @@ const App: React.FC = () => {
                   isActive={activeTool === 'hashtag'}
                   onClick={() => setActiveTool('hashtag')}
               />
+               <ToolButton
+                  label="Bio Generator"
+                  icon={<ProfileIcon />}
+                  isActive={activeTool === 'bio'}
+                  onClick={() => setActiveTool('bio')}
+              />
+               <ToolButton
+                  label="Script Generator"
+                  icon={<ScriptIcon />}
+                  isActive={activeTool === 'script'}
+                  onClick={() => setActiveTool('script')}
+              />
           </div>
           
           {activeTool === 'idea' && (
@@ -158,6 +179,22 @@ const App: React.FC = () => {
                       setError(msg);
                       if (msg) setNotification(null);
                   }}
+                  onRequireApiKey={() => setIsSettingsModalOpen(true)}
+              />
+          )}
+
+          {activeTool === 'bio' && (
+              <ProfileBioGenerator
+                  apiKey={apiKey}
+                  onError={(msg) => { setError(msg); if(msg) setNotification(null); }}
+                  onRequireApiKey={() => setIsSettingsModalOpen(true)}
+              />
+          )}
+           
+          {activeTool === 'script' && (
+              <ReelScriptGenerator
+                  apiKey={apiKey}
+                  onError={(msg) => { setError(msg); if(msg) setNotification(null); }}
                   onRequireApiKey={() => setIsSettingsModalOpen(true)}
               />
           )}

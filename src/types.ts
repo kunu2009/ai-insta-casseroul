@@ -32,3 +32,23 @@ export interface HashtagGroup {
   category: string;
   hashtags: string[];
 }
+
+export interface BioDetails {
+  name: string;
+  niche: string;
+  cta: string;
+  tone: 'Professional' | 'Friendly' | 'Witty' | 'Inspirational';
+}
+
+export interface ReelScene {
+  visual: string;
+  script: string;
+  onScreenText: string;
+}
+
+export interface ReelScript {
+  title: string;
+  hook: string;
+  scenes: ReelScene[];
+  cta: string;
+}

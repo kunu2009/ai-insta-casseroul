@@ -1,5 +1,5 @@
 import { GoogleGenAI, Modality } from "@google/genai";
-import { SlideContent, ImageGenOptions, Idea, HashtagGroup } from '../types';
+import { SlideContent, ImageGenOptions, Idea, HashtagGroup, BioDetails, ReelScript } from '../types';
 
 // Re-introduce getAiClient to handle user-provided API keys.
 const getAiClient = (apiKey: string) => {
@@ -291,3 +291,112 @@ export const generateHashtags = async (topic: string, apiKey: string): Promise<H
     throw new Error("An unknown error occurred while generating hashtags.");
   }
 };
+
+export const generateProfileBios = async (details: BioDetails, apiKey: string): Promise<string[]> => {
+  const ai = getAiClient(apiKey);
+  try {
+    const prompt = `
+      Generate 3-5 distinct and compelling Instagram bio options based on the following details.
+      Each bio must be under 150 characters.
+
+      Details:
+      - Name/Brand: ${details.name}
+      - Niche/Role: ${details.niche}
+      - Call to Action: ${details.cta}
+      - Tone: ${details.tone}
+
+      Instructions for each bio:
+      1. Clearly state who the person is and what they do.
+      2. Incorporate the call to action naturally.
+      3. Use line breaks (\n) for readability.
+      4. Use relevant emojis to add personality and break up text.
+      5. Tailor the language to the specified tone.
+
+      IMPORTANT: Respond with ONLY a valid JSON object. Do not include markdown, backticks, or any text outside of the JSON object.
+      The JSON object must have a single root key "bios", which is an array of strings. Each string is a complete bio.
+      Example format: { "bios": ["Bio 1...", "Bio 2...", "Bio 3..."] }
+    `;
+
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: prompt,
+      config: {
+        systemInstruction: "You are an expert Instagram bio copywriter who communicates exclusively in valid JSON format. Your sole purpose is to generate optimized Instagram bios based on user-provided details.",
+      },
+    });
+
+    const text = response.text;
+    if (!text) {
+        throw new Error("API response was empty.");
+    }
+    const match = text.trim().match(/\{[\s\S]*\}/);
+    if (!match) {
+        throw new Error("Could not find a valid JSON object in the API response.");
+    }
+
+    const parsedData = JSON.parse(match[0]) as { bios: string[] };
+
+    if (!parsedData.bios || !Array.isArray(parsedData.bios) || parsedData.bios.length === 0) {
+      throw new Error("Invalid data structure in parsed JSON. Expected a 'bios' array.");
+    }
+    
+    return parsedData.bios;
+  } catch (error) {
+    console.error("Error generating bios:", error);
+    throw new Error(error instanceof Error ? `Failed to generate bios: ${error.message}` : "An unknown error occurred.");
+  }
+};
+
+export const generateReelScript = async (topic: string, format: string, apiKey: string): Promise<ReelScript> => {
+    const ai = getAiClient(apiKey);
+    try {
+      const prompt = `
+        Create a detailed script for an Instagram ${format} based on the topic: "${topic}".
+
+        Instructions:
+        1.  **Title:** A catchy, SEO-friendly title for the video.
+        2.  **Hook:** A strong, attention-grabbing opening line or visual concept for the first 1-3 seconds.
+        3.  **Scenes/Slides:**
+            - For a Reel, provide 3-4 distinct scenes.
+            - For a Story, provide 5 distinct slides.
+            - For each scene/slide, detail three things: the "visual" (what the audience sees), the "script" (voiceover or dialogue), and the "onScreenText".
+        4.  **CTA (Call to Action):** A clear and compelling call to action for the end of the video.
+
+        IMPORTANT: Respond with ONLY a valid JSON object. Do not include markdown, backticks, or any text outside of the JSON object.
+        The JSON object must have these exact keys: "title", "hook", "scenes", and "cta".
+        - "scenes" must be an array of objects.
+        - Each scene object must have these exact keys: "visual", "script", and "onScreenText".
+        
+        Example format for a scene object:
+        { "visual": "A close-up shot of a steaming coffee cup.", "script": "Start your day the right way...", "onScreenText": "Morning Coffee Tip" }
+      `;
+  
+      const response = await ai.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: prompt,
+        config: {
+          systemInstruction: "You are a professional video content creator and scriptwriter for social media, communicating exclusively in valid JSON format. Your purpose is to generate structured scripts for Instagram Reels and Stories.",
+        },
+      });
+  
+      const text = response.text;
+      if (!text) {
+          throw new Error("API response was empty.");
+      }
+      const match = text.trim().match(/\{[\s\S]*\}/);
+      if (!match) {
+          throw new Error("Could not find a valid JSON object in the API response.");
+      }
+  
+      const parsedData = JSON.parse(match[0]) as ReelScript;
+  
+      if (!parsedData.title || !parsedData.hook || !parsedData.scenes || !Array.isArray(parsedData.scenes) || !parsedData.cta) {
+        throw new Error("Invalid data structure in parsed JSON. Required keys are missing.");
+      }
+      
+      return parsedData;
+    } catch (error) {
+      console.error("Error generating script:", error);
+      throw new Error(error instanceof Error ? `Failed to generate script: ${error.message}` : "An unknown error occurred.");
+    }
+  };
