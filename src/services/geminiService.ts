@@ -122,28 +122,21 @@ export const generateImageFromPrompt = async (slide: Pick<SlideContent, 'title' 
   }
 };
 
-export const generateCaptions = async (slides: SlideContent[], apiKey: string): Promise<string[]> => {
+export const generateCaptions = async (topic: string, apiKey: string): Promise<string[]> => {
   const ai = getAiClient(apiKey);
-  if (slides.length === 0) {
-    throw new Error("Cannot generate captions for an empty carousel. Please generate content first.");
-  }
-  
-  const carouselContent = slides.map((slide, index) => 
-    `Slide ${index + 1} Title: ${slide.title}\nSlide ${index + 1} Content:\n- ${slide.content.join('\n- ')}`
-  ).join('\n\n');
 
   try {
     const prompt = `
-      Based on the following Instagram carousel content, generate 3 distinct and engaging caption options.
+      Based on the following Instagram post description, generate 3 distinct and engaging caption options.
 
-      Carousel Content:
+      Post Description:
       ---
-      ${carouselContent}
+      ${topic}
       ---
 
       Instructions for each caption:
       1. Start with a strong, scroll-stopping hook.
-      2. Briefly summarize the value provided in the carousel.
+      2. Elaborate on the user's description to create a compelling narrative.
       3. End with a clear call-to-action (e.g., asking a question, encouraging saves/shares).
       4. Include 3-5 relevant, niche hashtags.
       5. Use emojis appropriately to enhance readability and engagement.
@@ -157,7 +150,7 @@ export const generateCaptions = async (slides: SlideContent[], apiKey: string): 
       model: "gemini-2.5-flash",
       contents: prompt,
       config: {
-        systemInstruction: "You are a world-class Instagram copywriter who communicates exclusively in valid JSON format. Your sole purpose is to generate compelling captions for carousels based on the content provided.",
+        systemInstruction: "You are a world-class Instagram copywriter who communicates exclusively in valid JSON format. Your sole purpose is to generate compelling captions for posts based on the description provided.",
       },
     });
 
