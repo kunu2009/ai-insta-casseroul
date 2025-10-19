@@ -1,4 +1,4 @@
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI, Modality } from "@google/genai";
 import { SlideContent } from '../types';
 
 // Re-introduce getAiClient to handle user-provided API keys.
@@ -14,7 +14,7 @@ export const generateCarouselContent = async (topic: string, apiKey: string): Pr
   const ai = getAiClient(apiKey);
   try {
     const prompt = `
-      Generate a 5-7 slide Instagram carousel script based on the topic: "${topic}".
+      Generate a 3-5 slide Instagram carousel script based on the topic: "${topic}".
       The first slide should be a strong hook, the last a call to action.
 
       IMPORTANT: Respond with ONLY a valid JSON object. Do not include markdown, backticks, or any text outside of the JSON object.
@@ -67,23 +67,25 @@ export const generateCarouselContent = async (topic: string, apiKey: string): Pr
 export const generateImageFromPrompt = async (prompt: string, apiKey: string): Promise<string> => {
   const ai = getAiClient(apiKey);
   try {
-    const response = await ai.models.generateImages({
-        model: 'imagen-4.0-generate-001',
-        prompt: `A vibrant, minimalist, and aesthetically pleasing graphic for an Instagram carousel slide. The graphic should visually represent the concept: "${prompt}". Use a clean and modern style.`,
+    const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash-image',
+        contents: {
+          parts: [{ text: `A vibrant, minimalist, and aesthetically pleasing graphic for an Instagram carousel slide. The graphic should visually represent the concept: "${prompt}". Use a clean and modern style.` }]
+        },
         config: {
-          numberOfImages: 1,
-          outputMimeType: 'image/jpeg',
-          aspectRatio: '1:1',
+          responseModalities: [Modality.IMAGE],
         },
     });
 
-    const generatedImage = response.generatedImages?.[0];
-    if (!generatedImage?.image?.imageBytes) {
-        throw new Error("No image was generated or image data is missing.");
+    for (const part of response.candidates[0].content.parts) {
+      if (part.inlineData) {
+        const base64ImageBytes: string = part.inlineData.data;
+        const mimeType = part.inlineData.mimeType;
+        return `data:${mimeType};base64,${base64ImageBytes}`;
+      }
     }
     
-    const base64ImageBytes: string = generatedImage.image.imageBytes;
-    return `data:image/jpeg;base64,${base64ImageBytes}`;
+    throw new Error("No image was generated or image data is missing.");
 
   } catch (error) {
     console.error("Error generating image:", error);
@@ -91,8 +93,8 @@ export const generateImageFromPrompt = async (prompt: string, apiKey: string): P
         if (error.message.includes('RESOURCE_EXHAUSTED') || error.message.includes('429')) {
              throw new Error("API rate limit exceeded. Please wait a moment before trying to generate more images.");
         }
-        if (error.message.includes('Imagen API is only accessible to billed users')) {
-            throw new Error("Image generation failed because the Imagen API requires a billing-enabled Google Cloud project.");
+        if (error.message.includes('billing required') || error.message.includes('billing-enabled')) {
+            throw new Error("Image generation failed. This model may require a billing-enabled Google Cloud project.");
         }
         throw new Error(`Failed to generate image: ${error.message}`);
     }
