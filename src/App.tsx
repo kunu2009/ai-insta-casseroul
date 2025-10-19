@@ -28,6 +28,7 @@ const App: React.FC = () => {
   const [isZipping, setIsZipping] = useState<boolean>(false);
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [notification, setNotification] = useState<string | null>(null);
   const [apiKey, setApiKey] = useState<string>('');
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const draggedSlideIndex = useRef<number | null>(null);
@@ -82,6 +83,7 @@ const App: React.FC = () => {
       setLogo(null);
       setTopic('');
       setError(null);
+      setNotification(null);
   };
 
   const handleSaveApiKey = (newApiKey: string) => {
@@ -93,6 +95,7 @@ const App: React.FC = () => {
     if (!apiKey) {
         setIsLoading(true);
         setError(null);
+        setNotification(null);
         setSlides([]);
         // Generate a sample carousel to showcase functionality
         const sampleSlidesData = [
@@ -123,41 +126,42 @@ const App: React.FC = () => {
     }
     setIsLoading(true);
     setError(null);
+    setNotification(null);
     setSlides([]);
 
     try {
-      let initialSlides = await generateCarouselContent(topic, apiKey);
+      let slidesWithContent = await generateCarouselContent(topic, apiKey);
       
-      if (initialSlides.length > 0) {
-        const firstSlide = initialSlides[0];
+      if (slidesWithContent.length > 0) {
+        const firstSlide = slidesWithContent[0];
         try {
             // Attempt to generate the first image with AI
             const imageUrl = await generateImageFromPrompt(firstSlide.imagePrompt, apiKey);
-            initialSlides[0] = { ...firstSlide, imageUrls: [imageUrl], selectedImageIndex: 0 };
+            slidesWithContent[0] = { ...firstSlide, imageUrls: [imageUrl], selectedImageIndex: 0 };
         } catch (imageError) {
             console.error(`Failed to generate AI image for slide 1:`, imageError);
-            setError("AI image generation failed. Using stock photos as fallback.");
+            setNotification("AI image generation failed. Using stock photos as a fallback.");
             const fallbackUrl = `https://source.unsplash.com/1080x1080/?${encodeURIComponent(firstSlide.imagePrompt)}`;
-            initialSlides[0] = { ...firstSlide, imageUrls: [fallbackUrl], selectedImageIndex: 0 };
+            slidesWithContent[0] = { ...firstSlide, imageUrls: [fallbackUrl], selectedImageIndex: 0 };
         }
+
+        // Populate the rest of the slides with stock images instantly
+        const finalSlides = slidesWithContent.map((slide, index) => {
+            if (index > 0 && (!slide.imageUrls || slide.imageUrls.length === 0)) {
+                return {
+                    ...slide,
+                    imageUrls: [`https://source.unsplash.com/1080x1080/?${encodeURIComponent(slide.imagePrompt)}&random=${index}`],
+                    selectedImageIndex: 0,
+                };
+            }
+            return slide;
+        });
+
+        setSlides(finalSlides);
       }
 
-      // Populate the rest of the slides with stock images instantly
-      const finalSlides = initialSlides.map((slide, index) => {
-        if (index > 0 && slide.imageUrls.length === 0) {
-          return {
-            ...slide,
-            imageUrls: [`https://source.unsplash.com/1080x1080/?${encodeURIComponent(slide.imagePrompt)}&random=${index}`],
-            selectedImageIndex: 0,
-          };
-        }
-        return slide;
-      });
-
-      setSlides(finalSlides);
-
     } catch (err) {
-      setError(err instanceof Error ? `Error generating carousel content:\n${err.message}` : 'There was an unexpected error. Finish what you were doing.');
+      setError(err instanceof Error ? `Error generating carousel content:\n${err.message}` : 'An unexpected error occurred.');
       setSlides([]);
     } finally {
       setIsLoading(false);
@@ -211,7 +215,7 @@ const App: React.FC = () => {
         );
     } catch (err) {
         console.error("Failed to regenerate image", err);
-        setError(err instanceof Error ? err.message : "Failed to regenerate image. Please try again.");
+        setNotification(err instanceof Error ? err.message : "Failed to regenerate image. Please try again.");
     }
   };
 
@@ -253,6 +257,7 @@ const App: React.FC = () => {
       if(slides.length === 0 || !slides.every(s => s.imageUrls.length > 0)) return;
       setIsZipping(true);
       setError(null);
+      setNotification(null);
       try {
         const zip = new JSZip();
         
@@ -344,6 +349,15 @@ const App: React.FC = () => {
             </div>
           </div>
           
+          {notification && (
+            <div className="bg-yellow-900/30 border border-yellow-600 text-yellow-300 px-4 py-3 rounded-lg relative mb-6 animate-pulse" role="alert">
+                <span className="block sm:inline">{notification}</span>
+                <button onClick={() => setNotification(null)} className="absolute top-0 bottom-0 right-0 px-4 py-3" aria-label="Close notification">
+                    <svg className="fill-current h-6 w-6 text-yellow-400" role="button" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><title>Close</title><path d="M14.348 14.849a1.2 1.2 0 0 1-1.697 0L10 11.819l-2.651 3.029a1.2 1.2 0 1 1-1.697-1.697l2.758-3.15-2.759-3.152a1.2 1.2 0 1 1 1.697-1.697L10 8.183l2.651-3.031a1.2 1.2 0 1 1 1.697 1.697l-2.758 3.152 2.758 3.15a1.2 1.2 0 0 1 0 1.698z"/></svg>
+                </button>
+            </div>
+          )}
+
           <div className="min-h-[450px] flex items-center justify-center">
             {isLoading && slides.length === 0 ? <Loader /> : error ? (
               <div className="text-center text-red-400 bg-red-900/20 p-6 rounded-lg border border-red-500/50">
