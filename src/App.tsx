@@ -90,10 +90,31 @@ const App: React.FC = () => {
 
   const handleGenerate = useCallback(async () => {
     if (!apiKey) {
-      setError("Please set your Gemini API key in the settings.");
-      setIsSettingsModalOpen(true);
-      return;
+        setIsLoading(true);
+        setError(null);
+        setSlides([]);
+        // Generate a sample carousel to showcase functionality
+        const sampleSlidesData = [
+            { title: 'Welcome to 7k Insta!', content: ['This is a sample carousel.', 'Add your Gemini API key in Settings to generate with AI!'], imagePrompt: 'creativity, abstract' },
+            { title: 'Easy Text Editing', content: ['Click on any text block to edit.', 'A toolbar will appear for styling.'], imagePrompt: 'design, typography' },
+            { title: 'Multiple Templates', content: ['Select a visual style on the right.', 'Find the perfect look for your brand.'], imagePrompt: 'style, pattern' },
+            { title: 'Download & Share', content: ['When you\'re ready, download all slides as a zip file.'], imagePrompt: 'social media, sharing' }
+        ];
+
+        const generatedSlides = sampleSlidesData.map((slide, index) => ({
+            ...slide,
+            imageUrls: [`https://source.unsplash.com/1080x1080/?${encodeURIComponent(slide.imagePrompt)}&random=${index}`],
+            selectedImageIndex: 0,
+        }));
+        
+        // Use a small timeout to simulate loading for better UX
+        setTimeout(() => {
+            setSlides(generatedSlides);
+            setIsLoading(false);
+        }, 1000);
+        return;
     }
+
     if (!topic.trim()) {
       setError('Please enter a topic to generate a carousel.');
       return;
@@ -134,8 +155,8 @@ const App: React.FC = () => {
 
           setError(errorMessage);
 
-          // Use a fallback image
-          const fallbackUrl = `https://picsum.photos/seed/${encodeURIComponent(slide.title)}/1080/1080`;
+          // Use a fallback image from a free stock photo service
+          const fallbackUrl = `https://source.unsplash.com/1080x1080/?${encodeURIComponent(slide.imagePrompt)}`;
           setSlides(prevSlides => prevSlides.map((s, i) => i === index ? { ...s, imageUrls: [fallbackUrl], selectedImageIndex: 0 } : s));
 
           // If it's a rate limit or billing error, stop trying to generate more images
