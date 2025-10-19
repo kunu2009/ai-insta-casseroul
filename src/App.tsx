@@ -3,7 +3,7 @@ import JSZip from 'jszip';
 import html2canvas from 'html2canvas';
 import { SlideContent, TemplateId } from './types';
 import { generateCarouselContent, generateImageFromPrompt } from './services/geminiService';
-import { SettingsIcon, MagicWandIcon, LightBulbIcon, BrandIcon, DownloadIcon, SaveIcon, TrashIcon, PlusIcon } from './components/icons';
+import { SettingsIcon, MagicWandIcon, LightBulbIcon, BrandIcon, DownloadIcon, SaveIcon, TrashIcon, PlusIcon, UndoIcon, RedoIcon } from './components/icons';
 import Loader from './components/Loader';
 import SlideCard from './components/SlideCard';
 import VisualCarouselPreview from './components/VisualCarouselPreview';
@@ -33,6 +33,10 @@ const App: React.FC = () => {
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const draggedSlideIndex = useRef<number | null>(null);
 
+  // Undo/Redo state
+  const [history, setHistory] = useState<SlideContent[][]>([]);
+  const [historyIndex, setHistoryIndex] = useState<number>(-1);
+
   useEffect(() => {
     loadDraft();
     const storedApiKey = localStorage.getItem('geminiApiKey');
@@ -49,6 +53,32 @@ const App: React.FC = () => {
     }, 1000);
     return () => clearTimeout(debounceSave);
   }, [slides, logo, templateId]);
+  
+  const setSlidesWithHistory = (updater: React.SetStateAction<SlideContent[]>) => {
+    const newSlides = typeof updater === 'function' ? updater(slides) : updater;
+
+    const newHistory = history.slice(0, historyIndex + 1);
+    newHistory.push(newSlides);
+    setHistory(newHistory);
+    setHistoryIndex(newHistory.length - 1);
+    setSlides(newSlides);
+  };
+
+  const handleUndo = () => {
+    if (historyIndex > 0) {
+      const newIndex = historyIndex - 1;
+      setHistoryIndex(newIndex);
+      setSlides(history[newIndex]);
+    }
+  };
+
+  const handleRedo = () => {
+    if (historyIndex < history.length - 1) {
+      const newIndex = historyIndex + 1;
+      setHistoryIndex(newIndex);
+      setSlides(history[newIndex]);
+    }
+  };
 
 
   const saveDraft = () => {
@@ -69,6 +99,8 @@ const App: React.FC = () => {
           if (savedDraft) {
               const { slides, logo, templateId } = JSON.parse(savedDraft);
               setSlides(slides);
+              setHistory([slides]);
+              setHistoryIndex(0);
               setLogo(logo);
               setTemplateId(templateId);
           }
@@ -80,6 +112,8 @@ const App: React.FC = () => {
   const clearDraft = () => {
       localStorage.removeItem('carouselDraft');
       setSlides([]);
+      setHistory([]);
+      setHistoryIndex(-1);
       setLogo(null);
       setTopic('');
       setError(null);
@@ -92,11 +126,14 @@ const App: React.FC = () => {
   };
 
   const handleGenerate = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    setNotification(null);
+    setSlides([]);
+    setHistory([]);
+    setHistoryIndex(-1);
+    
     if (!apiKey) {
-        setIsLoading(true);
-        setError(null);
-        setNotification(null);
-        setSlides([]);
         // Generate a sample carousel to showcase functionality
         const sampleSlidesData = [
             { title: 'Welcome to 7k Insta!', content: ['This is a sample carousel.', 'Add your Gemini API key in Settings to generate with AI!'], imagePrompt: 'creativity, abstract' },
@@ -112,9 +149,10 @@ const App: React.FC = () => {
             selectedImageIndex: 0,
         }));
         
-        // Use a small timeout to simulate loading for better UX
         setTimeout(() => {
             setSlides(generatedSlides);
+            setHistory([generatedSlides]);
+            setHistoryIndex(0);
             setIsLoading(false);
         }, 1000);
         return;
@@ -122,12 +160,9 @@ const App: React.FC = () => {
 
     if (!topic.trim()) {
       setError('Please enter a topic to generate a carousel.');
+      setIsLoading(false);
       return;
     }
-    setIsLoading(true);
-    setError(null);
-    setNotification(null);
-    setSlides([]);
 
     try {
       let slidesWithContent = await generateCarouselContent(topic, apiKey);
@@ -135,7 +170,6 @@ const App: React.FC = () => {
       if (slidesWithContent.length > 0) {
         const firstSlide = slidesWithContent[0];
         try {
-            // Attempt to generate the first image with AI
             const imageUrl = await generateImageFromPrompt(firstSlide, apiKey);
             slidesWithContent[0] = { ...firstSlide, imageUrls: [imageUrl], selectedImageIndex: 0 };
         } catch (imageError) {
@@ -145,7 +179,6 @@ const App: React.FC = () => {
             slidesWithContent[0] = { ...firstSlide, imageUrls: [fallbackUrl], selectedImageIndex: 0 };
         }
 
-        // Populate the rest of the slides with stock images instantly
         const finalSlides = slidesWithContent.map((slide, index) => {
             if (index > 0 && (!slide.imageUrls || slide.imageUrls.length === 0)) {
                 return {
@@ -158,6 +191,8 @@ const App: React.FC = () => {
         });
 
         setSlides(finalSlides);
+        setHistory([finalSlides]);
+        setHistoryIndex(0);
       }
 
     } catch (err) {
@@ -177,7 +212,7 @@ const App: React.FC = () => {
   };
   
   const handleSlideImageUpload = (slideIndex: number, newImageUrl: string) => {
-      setSlides(currentSlides => 
+      setSlidesWithHistory(currentSlides => 
         currentSlides.map((slide, i) => {
             if (i === slideIndex) {
                 const newImageUrls = [...slide.imageUrls, newImageUrl];
@@ -203,7 +238,7 @@ const App: React.FC = () => {
     
     try {
         const newImageUrl = await generateImageFromPrompt(slideToRegenerate, apiKey);
-        setSlides(currentSlides =>
+        setSlidesWithHistory(currentSlides =>
             currentSlides.map((slide, i) => {
                 if (i === slideIndex) {
                     const newImageUrls = [...slide.imageUrls, newImageUrl];
@@ -223,7 +258,7 @@ const App: React.FC = () => {
   };
 
   const handleSelectImage = (slideIndex: number, imageIndex: number) => {
-    setSlides(currentSlides =>
+    setSlidesWithHistory(currentSlides =>
         currentSlides.map((slide, i) =>
             i === slideIndex ? { ...slide, selectedImageIndex: imageIndex } : slide
         )
@@ -231,17 +266,15 @@ const App: React.FC = () => {
   };
 
   const handleDeleteImage = (slideIndex: number, imageIndex: number) => {
-    setSlides(currentSlides =>
+    setSlidesWithHistory(currentSlides =>
         currentSlides.map((slide, i) => {
             if (i === slideIndex && slide.imageUrls.length > 1) { // Prevent deleting the last image
                 const newImageUrls = slide.imageUrls.filter((_, idx) => idx !== imageIndex);
                 
                 let newSelectedImageIndex = slide.selectedImageIndex;
                 if (imageIndex === newSelectedImageIndex) {
-                    // If we deleted the selected image, select the first one available
                     newSelectedImageIndex = 0;
                 } else if (imageIndex < newSelectedImageIndex) {
-                    // If we deleted an image before the selected one, shift the index down
                     newSelectedImageIndex -= 1;
                 }
                 
@@ -257,7 +290,7 @@ const App: React.FC = () => {
   };
 
   const handleSlideContentChange = (index: number, field: 'title' | 'content', value: string | string[]) => {
-      setSlides(currentSlides =>
+      setSlidesWithHistory(currentSlides =>
         currentSlides.map((slide, i) =>
             i === index ? { ...slide, [field]: value } : slide
         )
@@ -278,7 +311,7 @@ const App: React.FC = () => {
       const [draggedItem] = newSlides.splice(dragIndex, 1);
       newSlides.splice(dropIndex, 0, draggedItem);
       
-      setSlides(newSlides);
+      setSlidesWithHistory(newSlides);
       draggedSlideIndex.current = null;
   };
   
@@ -291,12 +324,12 @@ const App: React.FC = () => {
         imageUrls: [`https://picsum.photos/seed/new-slide-${Date.now()}/1080/1080`],
         selectedImageIndex: 0,
     };
-    setSlides(currentSlides => [...currentSlides, newSlide]);
+    setSlidesWithHistory(currentSlides => [...currentSlides, newSlide]);
   };
 
   const handleDeleteSlide = (slideIndex: number) => {
       if (window.confirm('Are you sure you want to delete this slide?')) {
-          setSlides(currentSlides => currentSlides.filter((_, i) => i !== slideIndex));
+          setSlidesWithHistory(currentSlides => currentSlides.filter((_, i) => i !== slideIndex));
       }
   };
 
@@ -419,6 +452,25 @@ const App: React.FC = () => {
               <div className="flex justify-between items-center mb-4">
                   <h2 className="text-2xl font-bold text-gray-300">Content & Assets</h2>
                   <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1 bg-gray-900/50 border border-gray-700 rounded-md p-1">
+                            <button
+                                onClick={handleUndo}
+                                disabled={historyIndex <= 0}
+                                className="p-1.5 rounded hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                                title="Undo"
+                            >
+                                <UndoIcon className="w-5 h-5" />
+                            </button>
+                            <button
+                                onClick={handleRedo}
+                                disabled={historyIndex >= history.length - 1}
+                                className="p-1.5 rounded hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                                title="Redo"
+                            >
+                                <RedoIcon className="w-5 h-5" />
+                            </button>
+                        </div>
+                        <div className="w-px h-6 bg-gray-700 mx-1"></div>
                       <div className={`flex items-center gap-1 text-sm text-gray-400 transition-opacity duration-500 ${isSaving ? 'opacity-100' : 'opacity-0'}`}>
                           <SaveIcon className="w-4 h-4" />
                           <span>Saved!</span>
