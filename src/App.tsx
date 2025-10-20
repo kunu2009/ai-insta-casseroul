@@ -69,14 +69,13 @@ const App: React.FC = () => {
       ></div>
 
       <div className="max-w-7xl mx-auto">
-        <header className="flex justify-between items-center mb-8">
-          <div className="w-10"></div> {/* Spacer to keep title centered */}
+        <header className="relative flex justify-center items-center mb-8">
           <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-pink-500 text-center">
             7k Insta Hub
           </h1>
           <button 
             onClick={() => setIsSettingsModalOpen(true)}
-            className="p-2 rounded-full hover:bg-gray-700/50 transition-colors"
+            className="absolute right-0 p-2 rounded-full hover:bg-gray-700/50 transition-colors"
             aria-label="Settings"
           >
             <SettingsIcon className="w-6 h-6 text-gray-300"/>

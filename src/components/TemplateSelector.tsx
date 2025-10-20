@@ -91,7 +91,7 @@ export const TemplateSelector: React.FC<TemplateSelectorProps> = ({ currentTempl
     return (
         <div>
             <p className="text-sm text-gray-400 mb-2 text-center lg:text-left">Choose a visual style</p>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 {templateOptions.map((template) => (
                     <button
                         key={template.id}
