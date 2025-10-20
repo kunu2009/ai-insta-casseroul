@@ -41,7 +41,8 @@ export const ProfileBioGenerator: React.FC<ProfileBioGeneratorProps> = ({ apiKey
         name: '',
         niche: '',
         cta: '',
-        tone: 'Friendly'
+        tone: 'Friendly',
+        keywords: '',
     });
     
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -78,15 +79,16 @@ export const ProfileBioGenerator: React.FC<ProfileBioGeneratorProps> = ({ apiKey
         <div className="w-full max-w-4xl mx-auto">
              <div className="bg-gray-800/50 backdrop-blur-md p-4 sm:p-6 rounded-2xl shadow-2xl border border-gray-700 mb-8">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <input type="text" name="name" value={details.name} onChange={handleInputChange} placeholder="Your Name or Brand" className="w-full bg-gray-900/70 border border-gray-600 rounded-lg p-3 focus:ring-2 focus:ring-purple-500" />
-                    <input type="text" name="niche" value={details.niche} onChange={handleInputChange} placeholder="What you do (e.g., Fitness Coach)" className="w-full bg-gray-900/70 border border-gray-600 rounded-lg p-3 focus:ring-2 focus:ring-purple-500" />
-                    <input type="text" name="cta" value={details.cta} onChange={handleInputChange} placeholder="Call to Action (e.g., DM for info)" className="w-full bg-gray-900/70 border border-gray-600 rounded-lg p-3 focus:ring-2 focus:ring-purple-500" />
+                    <input type="text" name="name" value={details.name} onChange={handleInputChange} placeholder="Your Name or Brand *" className="w-full bg-gray-900/70 border border-gray-600 rounded-lg p-3 focus:ring-2 focus:ring-purple-500" />
+                    <input type="text" name="niche" value={details.niche} onChange={handleInputChange} placeholder="What you do (e.g., Fitness Coach) *" className="w-full bg-gray-900/70 border border-gray-600 rounded-lg p-3 focus:ring-2 focus:ring-purple-500" />
+                    <input type="text" name="cta" value={details.cta} onChange={handleInputChange} placeholder="Call to Action (e.g., DM for info) *" className="w-full bg-gray-900/70 border border-gray-600 rounded-lg p-3 focus:ring-2 focus:ring-purple-500" />
                     <select name="tone" value={details.tone} onChange={handleInputChange} className="w-full bg-gray-900/70 border border-gray-600 rounded-lg p-3 focus:ring-2 focus:ring-purple-500">
                         <option>Friendly</option>
                         <option>Professional</option>
                         <option>Witty</option>
                         <option>Inspirational</option>
                     </select>
+                    <input type="text" name="keywords" value={details.keywords} onChange={handleInputChange} placeholder="Keywords to include (optional)" className="md:col-span-2 w-full bg-gray-900/70 border border-gray-600 rounded-lg p-3 focus:ring-2 focus:ring-purple-500" />
                 </div>
                  <button
                     onClick={handleGenerate}

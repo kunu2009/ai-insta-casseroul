@@ -1,9 +1,9 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import JSZip from 'jszip';
 import html2canvas from 'html2canvas';
-import { SlideContent, TemplateId, ImageGenOptions } from '../types';
+import { SlideContent, TemplateId, ImageGenOptions, CarouselMode } from '../types';
 import { generateCarouselContent, generateImageFromPrompt } from '../services/geminiService';
-import { MagicWandIcon, LightBulbIcon, BrandIcon, DownloadIcon, SaveIcon, TrashIcon, PlusIcon, UndoIcon, RedoIcon, GifIcon } from './icons';
+import { MagicWandIcon, LightBulbIcon, BrandIcon, DownloadIcon, SaveIcon, TrashIcon, PlusIcon, UndoIcon, RedoIcon, GifIcon, BrainIcon, ImageIcon } from './icons';
 import Loader from './Loader';
 import SlideCard from './SlideCard';
 import VisualCarouselPreview from './VisualCarouselPreview';
@@ -36,6 +36,7 @@ export const CarouselGenerator: React.FC<CarouselGeneratorProps> = ({ apiKey, on
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isZipping, setIsZipping] = useState<boolean>(false);
   const [isSaving, setIsSaving] = useState<boolean>(false);
+  const [carouselMode, setCarouselMode] = useState<CarouselMode>('ai');
   const draggedSlideIndex = useRef<number | null>(null);
 
   // Undo/Redo state
@@ -65,7 +66,7 @@ export const CarouselGenerator: React.FC<CarouselGeneratorProps> = ({ apiKey, on
         }
     }, 1000);
     return () => clearTimeout(debounceSave);
-  }, [slides, logo, templateId]);
+  }, [slides, logo, templateId, carouselMode]);
   
   const setSlidesWithHistory = (updater: React.SetStateAction<SlideContent[]>) => {
     const newSlides = typeof updater === 'function' ? updater(slides) : updater;
@@ -96,7 +97,7 @@ export const CarouselGenerator: React.FC<CarouselGeneratorProps> = ({ apiKey, on
   const saveDraft = () => {
       setIsSaving(true);
       try {
-        const draft = { slides, logo, templateId };
+        const draft = { slides, logo, templateId, carouselMode };
         localStorage.setItem('carouselDraft', JSON.stringify(draft));
         setTimeout(() => setIsSaving(false), 1500);
       } catch (e) {
@@ -109,12 +110,13 @@ export const CarouselGenerator: React.FC<CarouselGeneratorProps> = ({ apiKey, on
       try {
           const savedDraft = localStorage.getItem('carouselDraft');
           if (savedDraft) {
-              const { slides, logo, templateId } = JSON.parse(savedDraft);
+              const { slides, logo, templateId, carouselMode } = JSON.parse(savedDraft);
               setSlides(slides);
               setHistory([slides]);
               setHistoryIndex(0);
               setLogo(logo);
               setTemplateId(templateId);
+              if (carouselMode) setCarouselMode(carouselMode);
           }
       } catch (e) {
           console.error("Failed to load draft", e);
@@ -141,26 +143,9 @@ export const CarouselGenerator: React.FC<CarouselGeneratorProps> = ({ apiKey, on
     setHistoryIndex(-1);
     
     if (!apiKey) {
-        const sampleSlidesData = [
-            { title: 'Welcome to 7k Insta!', content: ['This is a sample carousel.', 'Add your Gemini API key in Settings to generate with AI!'], imagePrompt: 'creativity, abstract' },
-            { title: 'Easy Text Editing', content: ['Click on any text block to edit.', 'A toolbar will appear for styling.'], imagePrompt: 'design, typography' },
-            { title: 'Multiple Templates', content: ['Select a visual style on the right.', 'Find the perfect look for your brand.'], imagePrompt: 'style, pattern' },
-            { title: 'AI Caption Generator', content: ['After creating, switch to the Captions tab.', 'Get engaging text and hashtags instantly!'], imagePrompt: 'social media, sharing' }
-        ];
-
-        const generatedSlides: SlideContent[] = sampleSlidesData.map((slide, index) => ({
-            id: `sample_${Date.now()}_${index}`,
-            ...slide,
-            imageUrls: [`https://picsum.photos/seed/${encodeURIComponent(slide.imagePrompt)}-${index}/1080/1080`],
-            selectedImageIndex: 0,
-        }));
-        
-        setTimeout(() => {
-            setSlides(generatedSlides);
-            setHistory([generatedSlides]);
-            setHistoryIndex(0);
-            setIsLoading(false);
-        }, 1000);
+        onRequireApiKey();
+        onError("Please set your Gemini API key in settings to use the AI features.");
+        setIsLoading(false);
         return;
     }
 
@@ -173,33 +158,28 @@ export const CarouselGenerator: React.FC<CarouselGeneratorProps> = ({ apiKey, on
     try {
       let slidesWithContent = await generateCarouselContent(topic, apiKey);
       
-      if (slidesWithContent.length > 0) {
-        const firstSlide = slidesWithContent[0];
-        try {
-            const imageUrl = await generateImageFromPrompt(firstSlide, { aspectRatio: '1:1', style: 'Minimalist' }, apiKey);
-            slidesWithContent[0] = { ...firstSlide, imageUrls: [imageUrl], selectedImageIndex: 0 };
-        } catch (imageError) {
-            console.error(`Failed to generate AI image for slide 1:`, imageError);
-            onNotification("AI image generation failed. Using stock photos as a fallback.");
-            const fallbackUrl = `https://picsum.photos/seed/${encodeURIComponent(firstSlide.imagePrompt)}/1080/1080`;
-            slidesWithContent[0] = { ...firstSlide, imageUrls: [fallbackUrl], selectedImageIndex: 0 };
+      const imagePromises = slidesWithContent.map((slide, index) => {
+        if (carouselMode === 'ai') {
+          return generateImageFromPrompt(slide, { aspectRatio: '1:1', style: 'Minimalist' }, apiKey)
+            .catch(err => {
+              console.error(`Failed to generate AI image for slide ${index + 1}:`, err);
+              onNotification(`AI image for slide ${index+1} failed. Using stock photo.`);
+              return `https://picsum.photos/seed/${encodeURIComponent(slide.imagePrompt)}-${index}/1080/1080`;
+            });
+        } else { // stock mode
+          return Promise.resolve(`https://picsum.photos/seed/${encodeURIComponent(slide.imagePrompt)}-${index}/1080/1080`);
         }
+      });
 
-        const finalSlides = slidesWithContent.map((slide, index) => {
-            if (index > 0 && (!slide.imageUrls || slide.imageUrls.length === 0)) {
-                return {
-                    ...slide,
-                    imageUrls: [`https://picsum.photos/seed/${encodeURIComponent(slide.imagePrompt)}-${index}/1080/1080`],
-                    selectedImageIndex: 0,
-                };
-            }
-            return slide;
-        });
+      const imageUrls = await Promise.all(imagePromises);
 
-        setSlides(finalSlides);
-        setHistory([finalSlides]);
-        setHistoryIndex(0);
-      }
+      const finalSlides = slidesWithContent.map((slide, index) => ({
+        ...slide,
+        imageUrls: [imageUrls[index]],
+        selectedImageIndex: 0,
+      }));
+
+      setSlidesWithHistory(finalSlides);
 
     } catch (err) {
       onError(err instanceof Error ? `Error generating carousel content:\n${err.message}` : 'An unexpected error occurred.');
@@ -207,7 +187,7 @@ export const CarouselGenerator: React.FC<CarouselGeneratorProps> = ({ apiKey, on
     } finally {
       setIsLoading(false);
     }
-  }, [topic, apiKey, onError, onNotification]);
+  }, [topic, apiKey, onError, onNotification, carouselMode, onRequireApiKey]);
 
   const handleLogoChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -233,13 +213,35 @@ export const CarouselGenerator: React.FC<CarouselGeneratorProps> = ({ apiKey, on
       );
   };
 
-  const handleOpenImageGenModal = (slideIndex: number) => {
-    if (!apiKey) {
-        onError("Please set your Gemini API key in the settings before generating images.");
-        onRequireApiKey();
-        return;
+  const handleRegenerate = async (slideIndex: number) => {
+    const slideToRegenerate = slides[slideIndex];
+    if (!slideToRegenerate) return;
+
+    if (carouselMode === 'ai') {
+        if (!apiKey) {
+            onError("Please set your Gemini API key in settings to generate images.");
+            onRequireApiKey();
+            return;
+        }
+        setImageGenModal({ isOpen: true, slideIndex });
+    } else { // Stock mode
+        onNotification(`Fetching new stock image for slide #${slideIndex + 1}...`);
+        const newImageUrl = `https://picsum.photos/seed/${encodeURIComponent(slideToRegenerate.imagePrompt)}-${Date.now()}/1080/1080`;
+        
+        setSlidesWithHistory(currentSlides =>
+            currentSlides.map((slide, i) => {
+                if (i === slideIndex) {
+                    const newImageUrls = [...slide.imageUrls, newImageUrl];
+                    return {
+                        ...slide,
+                        imageUrls: newImageUrls,
+                        selectedImageIndex: newImageUrls.length - 1
+                    };
+                }
+                return slide;
+            })
+        );
     }
-    setImageGenModal({ isOpen: true, slideIndex });
   };
 
   const handleGenerateWithNewOptions = async (options: ImageGenOptions) => {
@@ -427,8 +429,18 @@ export const CarouselGenerator: React.FC<CarouselGeneratorProps> = ({ apiKey, on
 
         <div className="grid grid-cols-1 lg:grid-cols-[1fr,420px] gap-8">
             <div className="order-2 lg:order-1">
-            <div className="flex justify-between items-center mb-4">
-                <h2 className="text-2xl font-bold text-gray-300">Content & Assets</h2>
+            <div className="flex justify-between items-center mb-4 flex-wrap gap-4">
+                <div className="flex items-center gap-2">
+                    <h2 className="text-2xl font-bold text-gray-300">Content & Assets</h2>
+                     <div className="flex items-center gap-1 bg-gray-900/50 border border-gray-700 rounded-lg p-1">
+                        <button onClick={() => setCarouselMode('ai')} className={`flex items-center gap-2 px-3 py-1 text-sm rounded-md transition-colors ${carouselMode === 'ai' ? 'bg-purple-600 text-white' : 'text-gray-400 hover:bg-gray-700'}`} title="AI Image Mode">
+                            <BrainIcon className="w-4 h-4" /> AI Mode
+                        </button>
+                        <button onClick={() => setCarouselMode('stock')} className={`flex items-center gap-2 px-3 py-1 text-sm rounded-md transition-colors ${carouselMode === 'stock' ? 'bg-purple-600 text-white' : 'text-gray-400 hover:bg-gray-700'}`} title="Stock Image Mode">
+                            <ImageIcon className="w-4 h-4" /> Stock Mode
+                        </button>
+                    </div>
+                </div>
                 <div className="flex items-center gap-2">
                         <div className="flex items-center gap-1 bg-gray-900/50 border border-gray-700 rounded-md p-1">
                             <button
@@ -479,7 +491,7 @@ export const CarouselGenerator: React.FC<CarouselGeneratorProps> = ({ apiKey, on
                     slide={slide}
                     index={index}
                     onImageUpload={handleSlideImageUpload}
-                    onRegenerateImage={handleOpenImageGenModal}
+                    onRegenerate={() => handleRegenerate(index)}
                     onSelectImage={handleSelectImage}
                     onDragStart={() => handleDragStart(index)}
                     onDrop={() => handleDrop(index)}

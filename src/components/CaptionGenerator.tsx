@@ -2,12 +2,15 @@ import React, { useState } from 'react';
 import { generateCaptions } from '../services/geminiService';
 import Loader from './Loader';
 import { MagicWandIcon, CopyIcon, CheckIcon, LightBulbIcon } from './icons';
+import { CaptionTone } from '../types';
 
 interface CaptionGeneratorProps {
     apiKey: string;
     onError: (message: string) => void;
     onRequireApiKey: () => void;
 }
+
+const TONES: CaptionTone[] = ['Professional', 'Casual', 'Witty', 'Persuasive', 'Inspirational'];
 
 const CaptionCard: React.FC<{ text: string }> = ({ text }) => {
     const [copied, setCopied] = useState(false);
@@ -37,8 +40,9 @@ export const CaptionGenerator: React.FC<CaptionGeneratorProps> = ({ apiKey, onEr
     const [isLoading, setIsLoading] = useState(false);
     const [captions, setCaptions] = useState<string[]>([]);
     const [topic, setTopic] = useState('');
+    const [tone, setTone] = useState<CaptionTone>('Casual');
 
-    const handleGenerate = async () => {
+    const handleGenerate = async (append = false) => {
         if (!apiKey) {
             onError("Please set your Gemini API key in the settings before generating captions.");
             onRequireApiKey();
@@ -51,11 +55,13 @@ export const CaptionGenerator: React.FC<CaptionGeneratorProps> = ({ apiKey, onEr
 
         setIsLoading(true);
         onError('');
-        setCaptions([]);
+        if (!append) {
+            setCaptions([]);
+        }
 
         try {
-            const generatedCaptions = await generateCaptions(topic, apiKey);
-            setCaptions(generatedCaptions);
+            const generatedCaptions = await generateCaptions(topic, tone, apiKey);
+            setCaptions(prev => append ? [...prev, ...generatedCaptions] : generatedCaptions);
         } catch (err) {
             onError(err instanceof Error ? err.message : 'An unexpected error occurred.');
         } finally {
@@ -71,13 +77,21 @@ export const CaptionGenerator: React.FC<CaptionGeneratorProps> = ({ apiKey, onEr
                         value={topic}
                         onChange={(e) => setTopic(e.target.value)}
                         placeholder="e.g., 'A photo of a sunset over the mountains, feeling peaceful.'"
-                        className="md:col-span-2 w-full h-24 sm:h-auto resize-none bg-gray-900/70 border border-gray-600 rounded-lg p-4 focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all duration-300 placeholder-gray-500"
+                        className="md:col-span-3 w-full h-24 resize-none bg-gray-900/70 border border-gray-600 rounded-lg p-4 focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all duration-300 placeholder-gray-500"
                         disabled={isLoading}
                     />
-                    <button
-                        onClick={handleGenerate}
+                    <select
+                        value={tone}
+                        onChange={(e) => setTone(e.target.value as CaptionTone)}
+                        className="md:col-span-1 w-full bg-gray-900/70 border border-gray-600 rounded-lg p-3 focus:ring-2 focus:ring-purple-500 focus:outline-none"
                         disabled={isLoading}
-                        className="flex items-center justify-center gap-2 w-full h-full px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold rounded-lg shadow-lg hover:from-purple-600 hover:to-pink-600 transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100"
+                    >
+                        {TONES.map(t => <option key={t} value={t}>{t} Tone</option>)}
+                    </select>
+                    <button
+                        onClick={() => handleGenerate()}
+                        disabled={isLoading}
+                        className="md:col-span-2 flex items-center justify-center gap-2 w-full h-full px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold rounded-lg shadow-lg hover:from-purple-600 hover:to-pink-600 transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100"
                     >
                         <MagicWandIcon className="w-5 h-5"/>
                         {isLoading ? 'Generating...' : 'Generate Captions'}
@@ -96,11 +110,23 @@ export const CaptionGenerator: React.FC<CaptionGeneratorProps> = ({ apiKey, onEr
             )}
             
             {!isLoading && captions.length > 0 && (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {captions.map((caption, index) => (
-                        <CaptionCard key={index} text={caption} />
-                    ))}
-                </div>
+                <>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {captions.map((caption, index) => (
+                            <CaptionCard key={index} text={caption} />
+                        ))}
+                    </div>
+                     <div className="mt-8 text-center">
+                        <button
+                            onClick={() => handleGenerate(true)}
+                            disabled={isLoading}
+                            className="flex items-center justify-center gap-2 w-auto mx-auto px-6 py-3 bg-gray-700 text-white font-semibold rounded-lg shadow-lg hover:bg-gray-600 transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100"
+                        >
+                            <MagicWandIcon className="w-5 h-5"/>
+                            {isLoading ? 'Generating...' : 'Generate More'}
+                        </button>
+                    </div>
+                </>
             )}
         </div>
     );

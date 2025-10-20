@@ -52,6 +52,15 @@ export const HashtagGenerator: React.FC<HashtagGeneratorProps> = ({ apiKey, onEr
     const [isLoading, setIsLoading] = useState(false);
     const [hashtagGroups, setHashtagGroups] = useState<HashtagGroup[]>([]);
     const [topic, setTopic] = useState('');
+    const [allCopied, setAllCopied] = useState(false);
+
+    const handleCopyAll = () => {
+        const allTags = hashtagGroups.flatMap(g => g.hashtags).join(' ');
+        navigator.clipboard.writeText(allTags).then(() => {
+            setAllCopied(true);
+            setTimeout(() => setAllCopied(false), 2000);
+        });
+    };
 
     const handleGenerate = async () => {
         if (!apiKey) {
@@ -111,11 +120,21 @@ export const HashtagGenerator: React.FC<HashtagGeneratorProps> = ({ apiKey, onEr
             )}
             
             {!isLoading && hashtagGroups.length > 0 && (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {hashtagGroups.map((group, index) => (
-                        <HashtagGroupCard key={index} group={group} />
-                    ))}
-                </div>
+                 <>
+                    <div className="text-right mb-4">
+                        <button
+                            onClick={handleCopyAll}
+                            className="flex items-center justify-center gap-2 ml-auto px-4 py-2 bg-gray-700 text-white font-semibold rounded-lg shadow-md hover:bg-gray-600 transition-colors duration-200 disabled:opacity-50"
+                        >
+                            {allCopied ? <><CheckIcon className="w-5 h-5 text-green-400" /> Copied!</> : <><CopyIcon className="w-5 h-5" /> Copy All</>}
+                        </button>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {hashtagGroups.map((group, index) => (
+                            <HashtagGroupCard key={index} group={group} />
+                        ))}
+                    </div>
+                </>
             )}
         </div>
     );

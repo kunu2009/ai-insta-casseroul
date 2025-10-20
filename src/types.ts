@@ -38,6 +38,7 @@ export interface BioDetails {
   niche: string;
   cta: string;
   tone: 'Professional' | 'Friendly' | 'Witty' | 'Inspirational';
+  keywords?: string;
 }
 
 export interface ReelScene {
@@ -52,3 +53,7 @@ export interface ReelScript {
   scenes: ReelScene[];
   cta: string;
 }
+
+export type CarouselMode = 'ai' | 'stock';
+export type CaptionTone = 'Professional' | 'Casual' | 'Witty' | 'Persuasive' | 'Inspirational';
+export type ReelVibe = 'Educational' | 'Funny' | 'Inspirational' | 'Dramatic' | 'Chill';

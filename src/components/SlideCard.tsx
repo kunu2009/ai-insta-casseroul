@@ -6,7 +6,7 @@ interface SlideCardProps {
   slide: SlideContent;
   index: number;
   onImageUpload: (slideIndex: number, imageUrl: string) => void;
-  onRegenerateImage: (slideIndex: number) => void;
+  onRegenerate: (slideIndex: number) => void;
   onSelectImage: (slideIndex: number, imageIndex: number) => void;
   onDeleteImage: (slideIndex: number, imageIndex: number) => void;
   onDragStart: () => void;
@@ -23,7 +23,7 @@ const blobToBase64 = (blob: Blob): Promise<string> => {
     });
 };
 
-const SlideCard: React.FC<SlideCardProps> = ({ slide, index, onImageUpload, onRegenerateImage, onSelectImage, onDeleteImage, onDragStart, onDrop, onDelete }) => {
+const SlideCard: React.FC<SlideCardProps> = ({ slide, index, onImageUpload, onRegenerate, onSelectImage, onDeleteImage, onDragStart, onDrop, onDelete }) => {
   const [copied, setCopied] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -50,7 +50,7 @@ const SlideCard: React.FC<SlideCardProps> = ({ slide, index, onImageUpload, onRe
   };
 
   const handleRegenerate = () => {
-      onRegenerateImage(index);
+      onRegenerate(index);
   }
 
   const handlePrevImage = (e: React.MouseEvent) => {

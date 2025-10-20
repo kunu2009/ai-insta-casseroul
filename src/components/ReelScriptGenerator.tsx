@@ -2,13 +2,15 @@ import React, { useState } from 'react';
 import { generateReelScript } from '../services/geminiService';
 import Loader from './Loader';
 import { MagicWandIcon, CopyIcon, CheckIcon, LightBulbIcon } from './icons';
-import { ReelScript } from '../types';
+import { ReelScript, ReelVibe } from '../types';
 
 interface ReelScriptGeneratorProps {
     apiKey: string;
     onError: (message: string) => void;
     onRequireApiKey: () => void;
 }
+
+const VIBES: ReelVibe[] = ['Educational', 'Funny', 'Inspirational', 'Dramatic', 'Chill'];
 
 const ScriptDisplay: React.FC<{ script: ReelScript }> = ({ script }) => {
     const [copied, setCopied] = useState(false);
@@ -75,6 +77,7 @@ export const ReelScriptGenerator: React.FC<ReelScriptGeneratorProps> = ({ apiKey
     const [script, setScript] = useState<ReelScript | null>(null);
     const [topic, setTopic] = useState('');
     const [format, setFormat] = useState<'Reel' | 'Story'>('Reel');
+    const [vibe, setVibe] = useState<ReelVibe>('Educational');
 
     const handleGenerate = async () => {
         if (!apiKey) {
@@ -92,7 +95,7 @@ export const ReelScriptGenerator: React.FC<ReelScriptGeneratorProps> = ({ apiKey
         setScript(null);
 
         try {
-            const generatedScript = await generateReelScript(topic, format, apiKey);
+            const generatedScript = await generateReelScript(topic, format, vibe, apiKey);
             setScript(generatedScript);
         } catch (err) {
             onError(err instanceof Error ? err.message : 'An unexpected error occurred.');
@@ -104,24 +107,32 @@ export const ReelScriptGenerator: React.FC<ReelScriptGeneratorProps> = ({ apiKey
     return (
         <div className="w-full max-w-4xl mx-auto">
              <div className="bg-gray-800/50 backdrop-blur-md p-4 sm:p-6 rounded-2xl shadow-2xl border border-gray-700 mb-8">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <input
+                <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
+                     <input
                         type="text"
                         value={topic}
                         onChange={(e) => setTopic(e.target.value)}
                         placeholder="e.g., How to make the perfect iced coffee"
-                        className="md:col-span-2 w-full bg-gray-900/70 border border-gray-600 rounded-lg p-4 focus:ring-2 focus:ring-purple-500 focus:outline-none placeholder-gray-500"
+                        className="w-full bg-gray-900/70 border border-gray-600 rounded-lg p-4 focus:ring-2 focus:ring-purple-500 focus:outline-none placeholder-gray-500"
                         disabled={isLoading}
                     />
-                    <div className="flex flex-col gap-2">
-                        <div className="grid grid-cols-2 gap-2 bg-gray-900/70 border border-gray-600 rounded-lg p-1">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                         <div className="sm:col-span-1 grid grid-cols-2 gap-2 bg-gray-900/70 border border-gray-600 rounded-lg p-1">
                             <button onClick={() => setFormat('Reel')} className={`px-3 py-2 text-sm font-semibold rounded-md transition-colors ${format === 'Reel' ? 'bg-purple-600 text-white' : 'text-gray-300 hover:bg-gray-700'}`}>Reel</button>
                             <button onClick={() => setFormat('Story')} className={`px-3 py-2 text-sm font-semibold rounded-md transition-colors ${format === 'Story' ? 'bg-purple-600 text-white' : 'text-gray-300 hover:bg-gray-700'}`}>Story</button>
                         </div>
+                        <select
+                            value={vibe}
+                            onChange={(e) => setVibe(e.target.value as ReelVibe)}
+                            className="sm:col-span-1 w-full bg-gray-900/70 border border-gray-600 rounded-lg p-3 focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                            disabled={isLoading}
+                        >
+                             {VIBES.map(v => <option key={v} value={v}>{v} Vibe</option>)}
+                        </select>
                          <button
                             onClick={handleGenerate}
                             disabled={isLoading}
-                            className="flex items-center justify-center gap-2 w-full px-6 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold rounded-lg shadow-lg hover:from-purple-600 hover:to-pink-600 transition-all transform hover:scale-105 disabled:opacity-50"
+                            className="sm:col-span-1 flex items-center justify-center gap-2 w-full px-6 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold rounded-lg shadow-lg hover:from-purple-600 hover:to-pink-600 transition-all transform hover:scale-105 disabled:opacity-50"
                         >
                             <MagicWandIcon className="w-5 h-5"/>
                             {isLoading ? 'Generating...' : 'Generate Script'}
