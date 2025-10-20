@@ -441,7 +441,7 @@ export const CarouselGenerator: React.FC<CarouselGeneratorProps> = ({ apiKey, on
                         </button>
                     </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center flex-wrap justify-end gap-2">
                         <div className="flex items-center gap-1 bg-gray-900/50 border border-gray-700 rounded-md p-1">
                             <button
                                 onClick={handleUndo}
